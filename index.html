@@ -3,18 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>📋 貨物列車報單助手 (彰化車班版)</title>
+    <title>📋 貨物列車報單助手 (車班通用版)</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div style="background: #002161; color: #f8c000; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; text-align: center; border-bottom: 4px solid #f8c000; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
-        <div style="background: white; padding: 4px; border-radius: 4px; margin-right: 12px; display: flex; align-items: center;">
-            <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/Pgo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDIwMDEwOTA0Ly9FTiIKICJodHRwOi8vd3d3LnczLm9yZy9UUi8yMDAxL1JFQy1TVkctMjAwMTA5MDQvRFREL3N2ZzEwLmR0ZCI+CjxzdmcgdmVyc2lvbj0iMS4wIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiB3aWR0aD0iNTkxLjAwMDAwMHB0IiBoZWlnaHQ9IjU5MS4wMDAwMDBwdCIgdmlld0JveD0iMCAwIDU5MS4wMDAwMDAgNTkxLjAwMDAwMCIKIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIG1lZXQiPgoKPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMC4wMDAwMDAsNTkxLjAwMDAwMCkgc2NhbGUoMC4xMDAwMDAsLTAuMTAwMDAwKSIKZmlsbD0iIzAwMDAwMCIgc3Ryb2tlPSJub25lIj4KPHBhdGggZD0iTTc1NyA0MTE4IGM1IC03IDQ0IC01NyA4NiAtMTEwIDQyIC01NCAxMTEgLTE0MiAxNTQgLTE5NSA0MiAtNTQgMTAyCi0xMjkgMTMyIC0xNjggMzEgLTM4IDY3IC04NSA3OSAtMTAyIGwyMyAtMzMgMTYxNCAtMiAxNjE0IC0zIC0xMTAgLTE0MCBjLTYwCi03NyAtMTM1IC0xNzMgLTE2NyAtMjEyIGwtNTcgLTczIC01MjcgMCAtNTI3IDAgLTU0IC02NyBjLTY2IC04MyAtMjM0IC0yOTkKLTM0NCAtNDQyIGwtODMgLTEwNiAyNDkgLTUgMjQ5IC01IDc5IC04NSBjNDMgLTQ2IDE2NiAtMTc5IDI3NCAtMjk1IDEwNyAtMTE1CjI1MSAtMjcwIDMxOCAtMzQyIGwxMjIgLTEzMyA0NDUgMCBjMjQ0IDAgNDQ0IDIgNDQ0IDUgMCA0IC0xMzAgMTQ3IC03MDcgNzgwCmwtNjQgNzAgMTE4IDYgYzEzMSA2IDIwNCAyNCAzMDQgNzQgMTA1IDU0IDE3NyAxMjEgMzU4IDMzOCA5MiAxMTEgMjU1IDMwNgozNjEgNDMyIDEwNiAxMjcgMjAzIDI1MSAyMTUgMjc2IDM4IDczIDQ4IDE1NSAzMSAyMzcgLTMxIDE0OCAtMTE1IDI0NSAtMjUzCjI5MyAtNTUgMTkgLTEwNCAxOSAtMjIyMSAxOSAtMTczMCAwIC0yMTYzIC0zIC0yMTU1IC0xMnoiLz4KPHBhdGggZD0iTTE1OTMgMjk5NyBjLTc3IC0xMDAgLTM2NSAtNDcwIC00MzEgLTU1MiAtNDQgLTU1IC02OCAtODUgLTE4OCAtMjQxCi01NiAtNzMgLTM2NiAtNDY5IC00MTkgLTUzNSAtMjUgLTMxIC00NSAtNTkgLTQ1IC02MyAwIC0zIDIwMCAtNiA0NDQgLTYgbDQ0NQowIDIzMiAyOTggYzEyOCAxNjMgMjU1IDMyNiAyODMgMzYyIDI4IDM2IDE0MCAxODAgMjUwIDMyMCAxMTAgMTQwIDIzOCAzMDUKMjg2IDM2NSA0NyA2MSA4OSAxMTYgOTMgMTIzIDcgOSAtODQgMTIgLTQ0MCAxMiBsLTQ0OCAtMSAtNjIgLTgyeiIvPgo8L2c+Cjwvc3ZnPg==" style="height: 24px; width: 24px;">
-        </div>
-        <span>貨物列車報單助手 (彰化車班版)</span>
+    <!-- 藍底黃字大標題 -->
+    <div style="background: #002161; color: #f8c000; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-weight: bold; text-align: center; border-bottom: 4px solid #f8c000; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+        <span>📋 貨物列車報單助手</span>
     </div>
 
+    <!-- 【新增】頂部車班切換選單（亮黃底色，方便大拇指秒選） -->
+    <div class="card" style="background: #fff9db; border: 2px solid #fab005; padding: 10px; margin-bottom: 12px;">
+        <label style="color: #f59f00; font-size: 0.8rem;">🚩 請選擇值勤車班 (切換後會自動刷新車站大表)</label>
+        <select id="crewSelector" style="font-weight: bold; color: #002161; font-size: 1.05rem; border: 1px solid #fab005; background: #ffffff;">
+            <option value="changhua">彰化車班組 (新竹貨 ⇄ 嘉義)</option>
+            <option value="chiayi">嘉義車班組 (彰化 ⇄ 新左營 ⇄ 高雄)</option>
+        </select>
+    </div>
+
+    <!-- 車次與日期卡片 -->
     <div class="card grid-2">
         <div>
             <label>車次</label>
@@ -35,9 +43,9 @@
     <div id="stationContainer"></div>
 
     <button type="button" class="btn btn-secondary" id="btnAddStation">＋ 新增停靠站</button>
-    
     <div id="errorNotice" style="display: none; background-color: #ffe5e5; border: 2px solid #e53e3e; color: #e53e3e; padding: 12px; border-radius: 8px; margin-top: 15px; font-size: 0.9rem; font-weight: bold; line-height: 1.5;"></div>
 
+    <!-- 山海線開關：切換到嘉義版時會自動完全鎖定隱藏 -->
     <div id="directRouteSelector" style="display: none; background: #e6f0ff; border: 2px solid #1a5cff; padding: 12px; border-radius: 8px; margin: 15px 0 0 0; text-align: center; box-sizing: border-box;">
         <span id="directRouteTitle" style="font-weight: bold; color: #002161; display: block; margin-bottom: 8px; font-size: 0.95rem;">
             🧭 直達車運行線別確認
@@ -55,6 +63,7 @@
 
     <button type="button" class="btn" id="btnCalc" style="background-color: #38a169; margin-top: 15px;">📊 生成報單對照數據</button>
 
+    <!-- 對照彈出視窗 -->
     <div id="resultModal" class="modal">
         <div class="modal-content">
             <h3 style="margin-top:0; color:#0f3dbe;">抄寫對照表</h3>
