@@ -447,8 +447,22 @@ function addStationCard() {
     checkDirectRouteVisibility();
 }
 
-// 核心里程計算
+// 核心里程計算：新增嘉義車班無誤差「純手工查表閘門」
 function getFreightDistance(st1, st2) {
+    const crewKey = document.getElementById('crewSelector').value;
+    const crewData = window.allCrewDatabases[crewKey];
+    
+    // 💡 【嘉義車班專用查表防呆】如果是嘉義車班，直接去 lookupTable 撈答案
+    if (crewKey === 'chiayi' && crewData && crewData.lookupTable) {
+        // 由於查表鍵值是不分方向的（例如 橋頭-高雄 或 高雄-橋頭），我們做個雙向組合檢查
+        const key1 = `${st1}-${st2}`;
+        const key2 = `${st2}-${st1}`;
+        if (crewData.lookupTable[key1] !== undefined) return crewData.lookupTable[key1];
+        if (crewData.lookupTable[key2] !== undefined) return crewData.lookupTable[key2];
+        
+        // 如果選了相同的站（例如高雄➔高雄）
+        if (st1 === st2) return 0;
+    }
     const s1 = freightDatabase[st1];
     const s2 = freightDatabase[st2];
     if (!s1 || !s2) return 0;
