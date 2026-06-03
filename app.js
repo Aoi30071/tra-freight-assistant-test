@@ -1,4 +1,32 @@
-// 方案 B 核心：直達車開關視覺切換與賦值
+// 【新增】車班切換連動功能
+window.switchCrewVersion = function(crewKey) {
+    const crewData = window.allCrewDatabases[crewKey];
+    if (!crewData) return;
+
+    // 重新指派全域的車站資料大表
+    window.freightDatabase = crewData.database;
+    window.defaultStationOrder = crewData.order;
+
+    // 如果切換到嘉義版，強制隱藏並重設山海線直達開關；彰化版則交給掃描器自動判斷
+    const selectorDiv = document.getElementById('directRouteSelector');
+    if (selectorDiv) {
+        selectorDiv.style.display = 'none';
+        setDirectRoute('sea');
+    }
+
+    // 將所有現存卡片的選單全面重新整理與洗牌
+    const cards = document.querySelectorAll('.station-card');
+    cards.forEach((card, index) => {
+        const select = card.querySelector('.st-name');
+        if (select) select.value = ""; // 清空選定值避免跨車班出錯
+        renderSmartOptions(card, index);
+    });
+
+    refreshStationLabels();
+    checkDirectRouteVisibility();
+}
+
+// 方案 B：直達車開關視覺切換
 window.setDirectRoute = function(route) {
     const btnSea = document.getElementById('toggleSea');
     const btnMtn = document.getElementById('toggleMountain');
@@ -14,19 +42,28 @@ window.setDirectRoute = function(route) {
     } else {
         btnSea.style.background = '#eeeeee';
         btnSea.style.color = '#333';
-        btnMtn.style.background = '#dc3545'; // 切換山線時顯示警示紅
+        btnMtn.style.background = '#dc3545';
         btnMtn.style.color = 'white';
         inputRoute.value = 'mountain';
     }
 }
 
-// 核心升級：自動掃描所有相鄰車站，只要有一段是竹南=彰化大直達路段，就秀出手機開關
+// 自動掃描相鄰車站（新增：車班權限開關判定）
 function checkDirectRouteVisibility() {
-    const names = document.querySelectorAll('.st-name');
+    const crewKey = document.getElementById('crewSelector').value;
+    const crewData = window.allCrewDatabases[crewKey];
     const selectorDiv = document.getElementById('directRouteSelector');
     const titleSpan = document.getElementById('directRouteTitle');
     if (!selectorDiv) return;
 
+    // 💡 防呆：如果目前車班不支援山海線切換（例如嘉義車班），直接封鎖並隱藏
+    if (!crewData || crewData.hasDirectRouteToggle === false) {
+        selectorDiv.style.display = 'none';
+        setDirectRoute('sea');
+        return;
+    }
+
+    const names = document.querySelectorAll('.st-name');
     if (names.length >= 2) {
         for (let i = 0; i < names.length - 1; i++) {
             const st1 = names[i].value;
@@ -130,7 +167,7 @@ function detectTrainRouteHistory() {
     return "尚未定錨";
 }
 
-// 智慧推薦下拉式選單生成核心（包含學長要求的奇進偶隱海線中港區專線邏輯）
+// 智慧推薦選單
 function renderSmartOptions(cardElement, index) {
     const select = cardElement.querySelector('.st-name');
     if (!select) return;
@@ -235,7 +272,7 @@ function renderSmartOptions(cardElement, index) {
                     html += `</optgroup><optgroup label="其餘南下車站">`;
                     for (let i = prevIdx + 1; i < defaultStationOrder.length; i++) {
                         const key = defaultStationOrder[i];
-                        if (freightDatabase[key] && (freightDatabase[key].line === "海線" || freightDatabase[key].line === "幹線") && key !== "臺中港" && key !== "中港區") {
+                        if (freightDatabase[key] && (freightDatabase[key].line === "海線" || freightDatabase[key].line === "幹線") && key !== "臺_港" && key !== "中港區") {
                             html += `<option value="${key}">${getOptionText(key)}</option>`;
                         }
                     }
@@ -278,67 +315,38 @@ function renderSmartOptions(cardElement, index) {
                 defaultStationOrder.forEach(key => { if (key !== "臺中港" && key !== "中港區") html += `<option value="${key}">${getOptionText(key)}</option>`; });
                 html += `</optgroup>`;
             } else {
+                // 通用車班方向推薦（同時適用彰化、嘉義車班）
+                const labelDirection = (dirType === 'even') ? "北上方向" : "南下方向";
+                html += `<optgroup label="🧭 運行推薦：${labelDirection}">`;
+                
                 if (dirType === 'even') {
-                    html += `<optgroup label="🧭 停靠站推薦：山海線北上方向">`;
                     for (let i = prevIdx - 1; i >= 0; i--) {
                         const key = defaultStationOrder[i];
                         const info = freightDatabase[key];
                         if (info && info.line !== "集集線" && info.line !== "專線" && key !== "中興支線") {
-                            if (key !== "彰化" && key !== "竹南" && info.line === "幹線") {
-                                // 共通幹線放行
-                            } else {
+                            if (key !== "彰化" && key !== "竹南" && info.line === "幹線") { /* 幹線放行 */ } 
+                            else {
                                 if (currentRouteMode === "山線專用" && info.line === "海線") continue;
                                 if (currentRouteMode === "海線專用" && info.line === "山線") continue;
                             }
                             html += `<option value="${key}">${getOptionText(key)}</option>`;
                         }
                     }
-                    html += `</optgroup><optgroup label="南下方向車站">`;
-                    for (let i = prevIdx + 1; i < defaultStationOrder.length; i++) {
-                        const key = defaultStationOrder[i];
-                        const info = freightDatabase[key];
-                        if (info && info.line !== "集集線" && info.line !== "專線" && key !== "中興支線") {
-                            if (key !== "彰化" && key !== "竹南" && info.line === "幹線") {
-                                // 放行彰化以南大站
-                            } else {
-                                if (currentRouteMode === "山線專用" && info.line === "海線") continue;
-                                if (currentRouteMode === "海線專用" && info.line === "山線") continue;
-                            }
-                            html += `<option value="${key}">${getOptionText(key)}</option>`;
-                        }
-                    }
-                    html += `</optgroup>`;
                 } else {
-                    html += `<optgroup label="🧭 停靠站推薦：山海線南下方向">`;
                     for (let i = prevIdx + 1; i < defaultStationOrder.length; i++) {
                         const key = defaultStationOrder[i];
                         const info = freightDatabase[key];
                         if (info && info.line !== "集集線" && info.line !== "專線" && key !== "中興支線") {
-                            if (key !== "彰化" && key !== "竹南" && info.line === "幹線") {
-                                // 放行
-                            } else {
+                            if (key !== "彰化" && key !== "竹南" && info.line === "幹線") { /* 幹線放行 */ } 
+                            else {
                                 if (currentRouteMode === "山線專用" && info.line === "海線") continue;
                                 if (currentRouteMode === "海線專用" && info.line === "山線") continue;
                             }
                             html += `<option value="${key}">${getOptionText(key)}</option>`;
                         }
                     }
-                    html += `</optgroup><optgroup label="北上方向車站">`;
-                    for (let i = prevIdx - 1; i >= 0; i--) {
-                        const key = defaultStationOrder[i];
-                        const info = freightDatabase[key];
-                        if (info && info.line !== "集集線" && info.line !== "專線" && key !== "中興支線") {
-                            if (key !== "彰化" && key !== "竹南" && info.line === "幹線") {
-                                // 放行
-                            } else {
-                                if (currentRouteMode === "山線專用" && info.line === "海線") continue;
-                                if (currentRouteMode === "海線專用" && info.line === "山線") continue;
-                            }
-                            html += `<option value="${key}">${getOptionText(key)}</option>`;
-                        }
-                    }
-                    html += `</optgroup>`;
                 }
+                html += `</optgroup>`;
             }
             select.innerHTML = html;
             select.value = currentVal;
@@ -392,7 +400,7 @@ window.deleteCard = function(buttonObj) {
     if (card) {
         card.remove();
         refreshStationLabels();
-        checkDirectRouteVisibility(); // 刪除卡片時動態監聽
+        checkDirectRouteVisibility();
     }
 };
 
@@ -436,35 +444,37 @@ function addStationCard() {
     }
 
     refreshStationLabels();
-    checkDirectRouteVisibility(); // 新增卡片時動態監聽
+    checkDirectRouteVisibility();
 }
 
-// 核心里程計算模組（整合方案 B 無感抓取開關值）
-// 核心里程計算模組（精準修正專線攔截順序）
+// 核心里程計算
 function getFreightDistance(st1, st2) {
     const s1 = freightDatabase[st1];
     const s2 = freightDatabase[st2];
     if (!s1 || !s2) return 0;
 
-    // 【1. 核心大直達判定】竹南 ⇄ 彰化 大區間直達
+    // 大直達車判定（僅在彰化車班且符合跨線時啟動）
     const isNorthSide = (st1 === "新竹貨" || st1 === "新竹" || st1 === "竹南" || st2 === "新竹貨" || st2 === "新竹" || st2 === "竹南");
     const isSouthSide = (st1 === "彰化" || st1 === "員林" || st1 === "社頭" || st1 === "田中" || st1 === "二水" || st1 === "林內" || st1 === "斗六" || st1 === "斗南" || st1 === "大林" || st1 === "民雄" || st1 === "嘉義" || st2 === "彰化" || st2 === "員林" || st2 === "社頭" || st2 === "田中" || st2 === "二水" || st2 === "林內" || st2 === "斗六" || st2 === "斗南" || st2 === "大林" || st2 === "民雄" || st2 === "嘉義");
-    const isDirectCross = isNorthSide && isSouthSide;
+    
+    // 必須畫面上看得到開關，才啟動大直達公式
+    const selectorDiv = document.getElementById('directRouteSelector');
+    const isToggleActive = selectorDiv && selectorDiv.style.display === 'block';
 
-    if (isDirectCross) {
+    if (isNorthSide && isSouthSide && isToggleActive) {
         const chosenRoute = document.getElementById('currentDirectRoute').value;
         if (chosenRoute === 'mountain') {
-            return Math.abs(s1.km - s2.km); // 山線直達
+            return Math.abs(s1.km - s2.km);
         } else {
             const northStation = (s1.km < s2.km) ? s1 : s2;
             const southStation = (s1.km < s2.km) ? s2 : s1;
             const northToChunan = Math.abs(northStation.km - 121.7);
             const changhuaToSouth = Math.abs(southStation.km - 207.2);
-            return northToChunan + 90.2 + changhuaToSouth; // 海線直達
+            return northToChunan + 90.2 + changhuaToSouth;
         }
     }
 
-    // 【2. 專線與支線邏輯】移到最前面！防止中港區專線被後面的跨線分流誤判
+    // 專線與支線優先通關
     if (s1.line === "專線" && s1.parent === st2) return s1.km;
     if (s2.line === "專線" && s2.parent === st1) return s2.km;
     if ((st1 === "中興支線" && st2 === "二水") || (st2 === "中興支線" && st1 === "二水")) return 16;
@@ -476,14 +486,14 @@ function getFreightDistance(st1, st2) {
     if (st1 === "中興支線") return 16 + getFreightDistance("二水", st2);
     if (st2 === "中興支線") return 16 + getFreightDistance(st1, "二水");
 
-    // 【3. 海線內部區間】
+    // 海線內部區間
     if (s1.sea_km !== undefined && s2.sea_km !== undefined) {
         if (!((st1 === "竹南" && st2 === "彰化") || (st2 === "竹南" && st1 === "彰化"))) {
             return Math.abs(s1.sea_km - s2.sea_km);
         }
     }
 
-    // 【4. 跨線邏輯】（純海線 ⇄ 幹線/山線）
+    // 跨線分流邏輯
     if ((s1.sea_km !== undefined) !== (s2.sea_km !== undefined)) {
         const seaObj = (s1.sea_km !== undefined) ? s1 : s2;
         const trunkObj = (s1.sea_km === undefined) ? s1 : s2;
@@ -496,11 +506,11 @@ function getFreightDistance(st1, st2) {
         }
     }
 
-    // 普通幹線/山線兩站相減
+    // 純普通幹線/山線對減公式
     return Math.abs(s1.km - s2.km);
 }
 
-// 報單數據核心生成
+// 報單數據生成
 function calculateReport() {
     const names = document.querySelectorAll('.st-name');
     const guaRs = document.querySelectorAll('.st-gua-r');
@@ -597,9 +607,15 @@ function initApp() {
     document.getElementById('btnCalc').addEventListener('click', calculateReport);
     document.getElementById('btnCloseModal').addEventListener('click', closeModal);
     document.getElementById('trainNo').addEventListener('input', () => { updateFollowStations(-1); checkDirectRouteVisibility(); });
+    
+    // 【新增】車班切換下拉選單連動監聽
+    document.getElementById('crewSelector').addEventListener('change', (e) => {
+        switchCrewVersion(e.target.value);
+    });
+
     addStationCard();
     addStationCard();
-    checkDirectRouteVisibility(); // 初始化檢查
+    checkDirectRouteVisibility();
 }
 
 const startScheduler = setInterval(() => {
