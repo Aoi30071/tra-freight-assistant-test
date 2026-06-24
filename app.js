@@ -103,7 +103,7 @@ function checkDirectRouteVisibility() {
                         if (isHubIntersection && (theOtherStation.line === "山線" || theOtherStation.line === "幹線" || theOtherStation.line === "海線")) {
                             // 繼續往後巡邏
                         } else {
-                            // 🔍 【更正：直達車與跨線車分流號誌】
+                            // 🔍 【直達車與跨線車分流號誌】
                             const isNorthSide = (st1 === "新竹貨" || st1 === "新竹" || st1 === "竹南" || st2 === "新竹貨" || st2 === "新竹" || st2 === "竹南");
                             const isSouthSide = (st1 === "彰化" || st2 === "彰化");
 
@@ -215,7 +215,6 @@ function getOptionText(key) {
     return info ? `${key} (${info.line})` : `${key}`;
 }
 
-// 修正：補齊在剪下時被截斷的字
 function getTrainDirectionType() {
     const trainInput = document.getElementById('trainNo');
     if (!trainInput) return 'even'; 
@@ -244,7 +243,7 @@ function detectTrainRouteHistory() {
     return "尚未定錨";
 }
 
-// 智慧推薦選單
+// 智慧推薦選單 (🛠️ 已修復 166 行與 175 行的引號對齊 SyntaxError)
 function renderSmartOptions(cardElement, index) {
     const select = cardElement.querySelector('.st-name');
     if (!select) return;
@@ -254,7 +253,7 @@ function renderSmartOptions(cardElement, index) {
     if (isUnlocked) {
         let html = '<option value="">--自由任選全車站--</option>';
         defaultStationOrder.forEach(key => {
-            html += `<option value="${key}">${getOptionText(key)}</option>';
+            html += `<option value="${key}">${getOptionText(key)}</option>`;
         });
         select.innerHTML = html;
         select.value = currentVal;
@@ -264,7 +263,7 @@ function renderSmartOptions(cardElement, index) {
     if (index === 0) {
         let html = '<option value="">--請選擇發站--</option>';
         defaultStationOrder.forEach(key => {
-            html += `<option value="${key}">${getOptionText(key)}</option>';
+            html += `<option value="${key}">${getOptionText(key)}</option>`;
         });
         select.innerHTML = html;
         select.value = currentVal;
@@ -355,42 +354,42 @@ function renderSmartOptions(cardElement, index) {
                     }
                     html += `</optgroup>`;
                 }
-            } else if (prevInfo && (prevInfo.line === "集集線" || prevName === "中文支線" || prevName === "中興支線")) {
+            } else if (prevInfo && (prevInfo.line === "集集線" || prevName === "中文支線" || prevName === "amp;中興支線" || prevName === "中興支線")) {
                 if (dirType === 'odd') {
                     html += `<optgroup label="🧭 停靠站推薦：往支線內南下/深入">`;
                     defaultStationOrder.forEach(key => {
                         const info = freightDatabase[key];
                         if (info && (info.line === "集集線" || key === "中興支線") && key !== prevName) {
                             if (defaultStationOrder.indexOf(key) > defaultStationOrder.indexOf(prevName)) {
-                                html += `<option value="${key}">${key}</option>';
+                                html += `<option value="${key}">${key}</option>`;
                             }
                         }
                     });
                     html += `</optgroup><optgroup label="其餘車站">`;
-                    defaultStationOrder.forEach(key => { if (key !== prevName) html += `<option value="${key}">${getOptionText(key)}</option>'; });
+                    defaultStationOrder.forEach(key => { if (key !== prevName) html += `<option value="${key}">${getOptionText(key)}</option>`; });
                     select.innerHTML = html;
                     select.value = currentVal;
                     return;
                 } else {
                     html += `<optgroup label="🧭 停靠站推薦：由支線內北上/往二水">`;
-                    html += `<option value="二水">二水 (幹線) ⭐</option>';
+                    html += `<option value="二水">二水 (幹線) ⭐</option>`;
                     defaultStationOrder.forEach(key => {
                         const info = freightDatabase[key];
                         if (info && (info.line === "集集線" || key === "中文支線" || key === "中興支線") && key !== prevName) {
                             if (defaultStationOrder.indexOf(key) < defaultStationOrder.indexOf(prevName)) {
-                                html += `<option value="${key}">${key}</option>';
+                                html += `<option value="${key}">${key}</option>`;
                             }
                         }
                     });
                     html += `</optgroup><optgroup label="其餘車站">`;
-                    defaultStationOrder.forEach(key => { if (key !== prevName) html += `<option value="${key}">${getOptionText(key)}</option>'; });
+                    defaultStationOrder.forEach(key => { if (key !== prevName) html += `<option value="${key}">${getOptionText(key)}</option>`; });
                     html += `</optgroup>`;
                 }
             } else if (prevName === "中文港區" || prevName === "中港區") {
                 html += `<optgroup label="🧭 停靠站推薦：中港區出專線">`;
-                html += `<option value="臺中港">臺中港 (海線) ⭐</option>';
+                html += `<option value="臺中港">臺中港 (海線) ⭐</option>`;
                 html += `</optgroup><optgroup label="其餘幹線車站">`;
-                defaultStationOrder.forEach(key => { if (key !== "臺中港" && key !== "那些" && key !== "中港區") html += `<option value="${key}">${getOptionText(key)}</option>'; });
+                defaultStationOrder.forEach(key => { if (key !== "臺中港" && key !== "那些" && key !== "中港區") html += `<option value="${key}">${getOptionText(key)}</option>`; });
                 html += `</optgroup>`;
             } else {
                 const labelDirection = (dirType === 'even') ? "北上方向" : "南下方向";
@@ -403,17 +402,17 @@ function renderSmartOptions(cardElement, index) {
                         if (info && info.line !== "集集線" && info.line !== "專線" && key !== "中文港區" && key !== "中興支線") {
                             if (currentRouteMode === "海線專用" && info.line === "山線") continue;
                             if (currentRouteMode === "山線專用" && info.line === "海線") continue;
-                            html += `<option value="${key}">${getOptionText(key)}</option>';
+                            html += `<option value="${key}">${getOptionText(key)}</option>`;
                         }
                     }
                 } else {
                     for (let i = prevIdx + 1; i < defaultStationOrder.length; i++) {
                         const key = defaultStationOrder[i];
                         const info = freightDatabase[key];
-                        if (info && info.line !== "集集線" && info.line !== "專線" && key !== "中文港區" && key !== "中興支線") {
+                        if (info && info.line !== "集集線" && info.line !== "專線" && key !== "中文港區" && key !== "筑興支線" && key !== "中興支線") {
                             if (currentRouteMode === "海線專用" && info.line === "山線") continue;
                             if (currentRouteMode === "山線專用" && info.line === "海線") continue;
-                            html += `<option value="${key}">${getOptionText(key)}</option>';
+                            html += `<option value="${key}">${getOptionText(key)}</option>`;
                         }
                     }
                 }
@@ -441,7 +440,7 @@ function refreshStationLabels() {
         if (labelSpan) labelSpan.innerText = `第 ${currentNum} 站`;
         const actionArea = card.querySelector('.station-action');
         if (actionArea) {
-            actionArea.innerHTML = (currentNum === 1) ? '' : `<button type="button" class="btn-danger" onclick="deleteCard(this)">刪除</button>';
+            actionArea.innerHTML = (currentNum === 1) ? '' : `<button type="button" class="btn-danger" onclick="deleteCard(this)">刪除</button>`;
         }
     });
 }
