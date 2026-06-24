@@ -48,10 +48,12 @@ window.setDirectRoute = function(route) {
     }
 }
 
-// 💡 智慧方向定位自動掃描器（已全面解鎖：北上緊盯竹南總閘門、南下緊盯彰化總閘門邏輯）
 // 💡 智慧方向定位自動掃描器（學長基準代碼完全體優化版：100% 確保智慧選單與空白車站不失常）
 function checkDirectRouteVisibility() {
-    const crewKey = document.getElementById('crewSelector').value;
+    const crewSelector = document.getElementById('crewSelector');
+    if (!crewSelector) return;
+    
+    const crewKey = crewSelector.value;
     const crewData = window.allCrewDatabases[crewKey];
     const selectorDiv = document.getElementById('directRouteSelector');
     const titleSpan = document.getElementById('directRouteTitle');
@@ -66,89 +68,96 @@ function checkDirectRouteVisibility() {
         return;
     }
 
+    // 🌟 確保全域資料庫有綁定，防止卡片出生時抓空
+    if (!window.freightDatabase && crewData.database) {
+        window.freightDatabase = crewData.database;
+        window.defaultStationOrder = crewData.order;
+    }
+
     const names = document.querySelectorAll('.st-name');
     if (names.length >= 2) {
         for (let i = 0; i < names.length - 1; i++) {
             const st1 = names[i].value;
             const st2 = names[i+1].value;
             
-            if (st1 && st2) {
-                const s1 = freightDatabase[st1];
-                const s2 = freightDatabase[st2];
+            // 🌟【終極安全門】：如果起迄站其中一個還沒選（初始化階段），直接跳過不讀取屬性，保證不噴語法錯誤！
+            if (!st1 || !st2) {
+                continue;
+            }
 
-                if (s1 && s2) {
-                    // 🌟【第一關保護：專線與支線絕對防空閘門】
-                    if (s1.line === "專線" || s2.line === "專線" || 
-                        s1.line === "集集線" || s2.line === "集集線" || 
-                        st1 === "中興支線" || st2 === "中興支線") {
-                        selectorDiv.style.display = 'none';
-                        if (currentInput) currentInput.value = 'sea';
-                        return;
-                    }
+            const s1 = freightDatabase[st1];
+            const s2 = freightDatabase[st2];
 
-                    // 🌟【第二關：排除常規純同線區間】
-                    if (s1.line === s2.line && s1.line !== "幹線") {
+            if (s1 && s2) {
+                // 🌟【第一關保護：專線與支線絕對防空閘門】
+                if (s1.line === "專線" || s2.line === "專線" || 
+                    s1.line === "集集線" || s2.line === "集集線" || 
+                    st1 === "中興支線" || st2 === "中興支線") {
+                    selectorDiv.style.display = 'none';
+                    if (currentInput) currentInput.value = 'sea';
+                    return;
+                }
+
+                // 🌟【第二關：排除常規純同線區間】
+                if (s1.line === s2.line && s1.line !== "幹線") {
+                    // 繼續往後巡邏
+                } 
+                else if (s1.line === "山線" || s1.line === "海線" || s2.line === "山線" || s2.line === "海線" || 
+                         ((st1 === "新竹貨" || st1 === "新竹" || st1 === "竹南") && (st2 === "彰化")) ||
+                         ((st2 === "新竹貨" || st2 === "新竹" || st2 === "竹南") && (st1 === "彰化"))) {
+                    
+                    const isHubIntersection = (st1 === "彰化" || st1 === "竹南" || st2 === "彰化" || st2 === "竹南");
+                    const theOtherStation = (st1 === "彰化" || st1 === "竹南") ? s2 : s1;
+                    
+                    if (isHubIntersection && (theOtherStation.line === "山線" || theOtherStation.line === "幹線" || theOtherStation.line === "海線")) {
                         // 繼續往後巡邏
-                    } 
-                    else if (s1.line === "山線" || s1.line === "海線" || s2.line === "山線" || s2.line === "海線" || 
-                             ((st1 === "新竹貨" || st1 === "新竹" || st1 === "竹南") && (st2 === "彰化")) ||
-                             ((st2 === "新竹貨" || st2 === "新竹" || st2 === "竹南") && (st1 === "彰化"))) {
-                        
-                        const isHubIntersection = (st1 === "彰化" || st1 === "竹南" || st2 === "彰化" || st2 === "竹南");
-                        const theOtherStation = (st1 === "彰化" || st1 === "竹南") ? s2 : s1;
-                        
-                        if (isHubIntersection && (theOtherStation.line === "山線" || theOtherStation.line === "幹線" || theOtherStation.line === "海線")) {
-                            // 繼續往後巡邏
+                    } else {
+                        // 🚀【不破壞原生結構的終極方向分流機制】
+                        const isNorthSide = (st1 === "新竹貨" || st1 === "新竹" || st1 === "竹南" || st2 === "新竹貨" || st2 === "新竹" || st2 === "竹南");
+                        const isSouthSide = (st1 === "彰化" || st2 === "彰化");
+
+                        const dirType = getTrainDirectionType();
+                        const isGoingNorth = (dirType === 'even'); 
+
+                        if (isNorthSide && isSouthSide) {
+                            // 🟢 情況 A：純直達車流派（如 彰化 ⇄ 新貨）
+                            const directionText = isGoingNorth ? "【北上】" : "【南下】";
+                            if (titleSpan) titleSpan.innerText = `🧭 運轉調度：偵測到區間包含 ${directionText} 直達路段 (${st1} ➔ ${st2})`;
+                            if (btnSea) btnSea.innerHTML = "🌊 經由海線";
+                            if (btnMtn) btnMtn.innerHTML = "⛰️ 經由山線";
+
+                            // 🚂 貨列實務鐵律：直達車一律預設亮海線！
+                            if (currentInput && btnSea && btnMtn) {
+                                btnSea.style.background = '#1a5cff'; 
+                                btnSea.style.color = 'white';
+                                btnMtn.style.background = '#eeeeee';
+                                btnMtn.style.color = '#333';
+                                currentInput.value = 'sea';
+                            }
                         } else {
-                            // 🚀【學長指導：不破壞原生結構的終極分流】
-                            const isNorthSide = (st1 === "新竹貨" || st1 === "新竹" || st1 === "竹南" || st2 === "新竹貨" || st2 === "新竹" || st2 === "竹南");
-                            const isSouthSide = (st1 === "彰化" || st2 === "彰化");
+                            // 🟡 情況 B：常規交叉跨線車流派（北越竹南、南越彰化）
+                            if (titleSpan) titleSpan.innerText = "⚠️ 請確認經由樞紐：";
+                            if (btnSea) btnSea.innerHTML = "⎇ 經由彰化";
+                            if (btnMtn) btnMtn.innerHTML = "⎇ 經由竹南";
 
-                            const dirType = getTrainDirectionType();
-                            const isGoingNorth = (dirType === 'even'); 
-
-                            if (isNorthSide && isSouthSide) {
-                                // 🟢 情況 A：純直達車流派（如 彰化 ⇄ 新貨）
-                                const directionText = isGoingNorth ? "【北上】" : "【南下】";
-                                if (titleSpan) titleSpan.innerText = `🧭 運轉調度：偵測到區間包含 ${directionText} 直達路段 (${st1} ➔ ${st2})`;
-                                if (btnSea) btnSea.innerHTML = "🌊 經由海線";
-                                if (btnMtn) btnMtn.innerHTML = "⛰️ 經由山線";
-
-                                // 🚂 貨列實務：直達車一律預設亮海線！
-                                if (currentInput && btnSea && btnMtn) {
+                            if (currentInput && btnSea && btnMtn) {
+                                if (isGoingNorth) {
+                                    btnSea.style.background = '#eeeeee';
+                                    btnSea.style.color = '#333';
+                                    btnMtn.style.background = '#dc3545'; 
+                                    btnMtn.style.color = 'white';
+                                    currentInput.value = 'mountain';
+                                } else {
                                     btnSea.style.background = '#1a5cff'; 
                                     btnSea.style.color = 'white';
                                     btnMtn.style.background = '#eeeeee';
                                     btnMtn.style.color = '#333';
                                     currentInput.value = 'sea';
                                 }
-                            } else {
-                                // 🟡 情況 B：常規交叉跨線車流派
-                                if (titleSpan) titleSpan.innerText = "⚠️ 請確認經由樞紐：";
-                                if (btnSea) btnSea.innerHTML = "⎇ 經由彰化";
-                                if (btnMtn) btnMtn.innerHTML = "⎇ 經由竹南";
-
-                                if (currentInput && btnSea && btnMtn) {
-                                    if (isGoingNorth) {
-                                        // 偶數北上跨線車預設以竹南為依歸
-                                        btnSea.style.background = '#eeeeee';
-                                        btnSea.style.color = '#333';
-                                        btnMtn.style.background = '#dc3545'; 
-                                        btnMtn.style.color = 'white';
-                                        currentInput.value = 'mountain';
-                                    } else {
-                                        // 奇數南下跨線車預設以彰化為依歸
-                                        btnSea.style.background = '#1a5cff'; 
-                                        btnSea.style.color = 'white';
-                                        btnMtn.style.background = '#eeeeee';
-                                        btnMtn.style.color = '#333';
-                                        currentInput.value = 'sea';
-                                    }
-                                }
                             }
-                            selectorDiv.style.display = 'block'; 
-                            return; 
                         }
+                        selectorDiv.style.display = 'block'; 
+                        return; 
                     }
                 }
             }
@@ -297,7 +306,7 @@ function renderSmartOptions(cardElement, index) {
                     html += `<option value="源泉">源泉 (集集線)</option>`;
                     for (let i = prevIdx - 1; i >= 0; i--) {
                         const key = defaultStationOrder[i];
-                        if (freightDatabase[key] && freightDatabase[key].line !== "集集線" && freightDatabase[key].line !== "專線" && key !== "中興支線") {
+                        if (freightDatabase[key] && freightDatabase[key].line !== "集集線" && freightDatabase[key].line !== "專線" && key !== "微調中興支線" && key !== "中興支線") {
                             html += `<option value="${key}">${getOptionText(key)}</option>`;
                         }
                     }
@@ -377,7 +386,7 @@ function renderSmartOptions(cardElement, index) {
                     html += `</optgroup>`;
                 }
             } else if (prevName === "中文港區" || prevName === "中港區") {
-                html += `<optgroup label="🧭 停靠站推薦：中港區出專線">`;
+                html += `<optgroup label="🧭 停靠站推薦：重選出專線">`;
                 html += `<option value="臺中港">臺中港 (海線) ⭐</option>`;
                 html += `</optgroup><optgroup label="其餘幹線車站">`;
                 defaultStationOrder.forEach(key => { if (key !== "臺中港" && key !== " those" && key !== "中港區") html += `<option value="${key}">${getOptionText(key)}</option>`; });
@@ -682,275 +691,6 @@ function calculateReport() {
     document.getElementById('resultModal').style.display = 'block';
 }
 
-function updateFollowStations(startIndex) {
-    const allCards = document.querySelectorAll('.station-card');
-    for (let i = startIndex + 1; i < allCards.length; i++) {
-        renderSmartOptions(allCards[i], i);
-    }
-}
-
-function refreshStationLabels() {
-    const cards = document.querySelectorAll('.station-card');
-    cards.forEach((card, index) => {
-        renderSmartOptions(card, index);
-        const currentNum = index + 1;
-        const labelSpan = card.querySelector('.station-label');
-        if (labelSpan) labelSpan.innerText = `第 ${currentNum} 站`;
-        const actionArea = card.querySelector('.station-action');
-        if (actionArea) {
-            actionArea.innerHTML = (currentNum === 1) ? '' : `<button type="button" class="btn-danger" onclick="deleteCard(this)">刪除</button>`;
-        }
-    });
-}
-
-window.toggleUnlock = function(buttonObj) {
-    const card = buttonObj.closest('.station-card');
-    const cards = Array.from(document.querySelectorAll('.station-card'));
-    const index = cards.indexOf(card);
-    const isUnlocked = card.getAttribute('data-unlocked') === 'true';
-    if (isUnlocked) {
-        card.setAttribute('data-unlocked', 'false');
-        buttonObj.innerText = "🔒 智慧篩選中";
-        buttonObj.style.backgroundColor = "#e2e8f0";
-        buttonObj.style.color = "#4a5568";
-    } else {
-        card.setAttribute('data-unlocked', 'true');
-        buttonObj.innerText = "🔓 已解除限制";
-        buttonObj.style.backgroundColor = "#feebc8";
-        buttonObj.style.color = "#c05621";
-    }
-    renderSmartOptions(card, index);
-    updateFollowStations(index);
-};
-
-window.deleteCard = function(buttonObj) {
-    const card = buttonObj.closest('.station-card');
-    if (card) {
-        card.remove();
-        refreshStationLabels();
-        checkDirectRouteVisibility();
-    }
-};
-
-function addStationCard() {
-    const container = document.getElementById('stationContainer');
-    if(!container) return; 
-    
-    const card = document.createElement('div');
-    card.className = 'card station-card';
-    card.setAttribute('data-unlocked', 'false');
-
-    card.innerHTML = `
-        <div class="station-header">
-            <span class="station-label">第 站</span>
-            <div class="station-action"></div>
-        </div>
-        <div style="margin-bottom: 10px; display: flex; gap: 8px; align-items: flex-end;">
-            <div style="flex: 1;">
-                <label>車站名</label>
-                <select class="st-name"></select>
-            </div>
-            <button type="button" onclick="toggleUnlock(this)" style="padding: 11px 8px; font-size: 0.8rem; border: 1px solid #cbd5e0; border-radius: 8px; background-color: #e2e8f0; color: #4a5568; font-weight: bold; white-space: nowrap; height: 45px;">🔒 智慧篩選中</button>
-        </div>
-        <div class="grid-4">
-            <div><label>連掛重</label><input type="number" class="st-gua-r" value="0" step="0.1" onfocus="this.select();"></div>
-            <div><label>連掛空</label><input type="number" class="st-gua-k" value="0" step="0.1" onfocus="this.select();"></div>
-            <div><label>摘下重</label><input type="number" class="st-zhai-r" value="0" step="0.1" onfocus="this.select();"></div>
-            <div><label>摘下空</label><input type="number" class="st-zhai-k" value="0" step="0.1" onfocus="this.select();"></div>
-        </div>
-    `;
-    
-    container.appendChild(card);
-    const select = card.querySelector('.st-name');
-    const allCards = Array.from(document.querySelectorAll('.station-card'));
-    const currentIndex = allCards.indexOf(card);
-    
-    if (currentIndex === 0) {
-        select.addEventListener('change', () => { updateFollowStations(0); checkDirectRouteVisibility(); });
-    } else {
-        select.addEventListener('change', () => { updateFollowStations(currentIndex); checkDirectRouteVisibility(); });
-    }
-
-    refreshStationLabels();
-    checkDirectRouteVisibility();
-}
-
-// 核心里程計算
-function getFreightDistance(st1, st2) {
-    const crewKey = document.getElementById('crewSelector').value;
-    const crewData = window.allCrewDatabases[crewKey];
-    
-    if (crewKey === 'chiayi' && crewData && crewData.lookupTable) {
-        const key1 = `${st1}-${st2}`;
-        const key2 = `${st2}-${st1}`;
-        if (crewData.lookupTable[key1] !== undefined) return crewData.lookupTable[key1];
-        if (crewData.lookupTable[key2] !== undefined) return crewData.lookupTable[key2];
-        if (st1 === st2) return 0;
-    }
-    const s1 = freightDatabase[st1];
-    const s2 = freightDatabase[st2];
-    if (!s1 || !s2) return 0;
-
-    // 專線與支線優先通關
-    if (s1.line === "專線" && s1.parent === st2) return s1.km;
-    if (s2.line === "專線" && s2.parent === st1) return s2.km;
-    if ((st1 === "中興支線" && st2 === "二水") || (st2 === "中興支線" && st1 === "二水")) return 16;
-    if (s1.line === "集集線" && st2 === "二水") return s1.km;
-    if (s2.line === "集集線" && st1 === "二水") return s2.km;
-    if (s1.line === "集集線" && s2.line === "集集線") return Math.abs(s1.km - s2.km);
-    if (s1.line === "集集線") return s1.km + getFreightDistance("二水", st2);
-    if (s2.line === "集集線") return s2.km + getFreightDistance(st1, "二水");
-    if (st1 === "中興支線") return 16 + getFreightDistance("二水", st2);
-    if (st2 === "中興支線") return 16 + getFreightDistance(st1, "二水");
-
-    const isNorthSide = (st1 === "新竹貨" || st1 === "新竹" || st1 === "竹南" || st2 === "新竹貨" || st2 === "新竹" || st2 === "竹南");
-    const isSouthSide = (st1 === "彰化" || st1 === "員林" || st1 === "社頭" || st1 === "田中" || st1 === "二水" || st1 === "林內" || st1 === "斗六" || st1 === "斗南" || st1 === "大林" || st1 === "民雄" || st1 === "嘉義" || st2 === "彰化" || st2 === "員林" || st2 === "社頭" || st2 === "田中" || st2 === "二水" || st2 === "林內" || st2 === "斗六" || st2 === "斗南" || st2 === "大林" || st2 === "民雄" || st2 === "嘉義");
-    const hiddenInput = document.getElementById('currentDirectRoute');
-    
-    // ==========================================
-    // 1. 【直達車流派】（如 新竹貨 ⇄ 二水）
-    // ==========================================
-    if (isNorthSide && isSouthSide) {
-        const chosenRoute = hiddenInput ? hiddenInput.value : 'sea';
-        if (chosenRoute === 'mountain') {
-            return Math.abs(s1.km - s2.km); 
-        } else {
-            const northStation = (s1.km < s2.km) ? s1 : s2;
-            const southStation = (s1.km < s2.km) ? s2 : s1;
-            const northToChunan = Math.abs(northStation.km - 121.7);
-            const changhuaToSouth = Math.abs(southStation.km - 207.2);
-            return northToChunan + 90.2 + changhuaToSouth; 
-        }
-    }
-
-    // ==========================================
-    // 2. 【海線內部區間流派】
-    // ==========================================
-    if (s1.sea_km !== undefined && s2.sea_km !== undefined) {
-        if (!((st1 === "竹南" && st2 === "彰化") || (st2 === "竹南" && st1 === "彰化"))) {
-            return Math.abs(s1.sea_km - s2.sea_km);
-        }
-    }
-
-    // ==========================================
-    // 3. 【交叉跨線車流派】（如 三義 ⇄ 沙鹿）
-    // ==========================================
-    if ((s1.sea_km !== undefined) !== (s2.sea_km !== undefined)) {
-        const isHubIntersection = (st1 === "彰化" || st1 === "竹南" || st2 === "彰化" || st2 === "竹南");
-        const theOtherStation = (st1 === "彰化" || st1 === "竹南") ? s2 : s1;
-        
-        if (isHubIntersection && (theOtherStation.line === "山線" || theOtherStation.line === "幹線")) {
-            // 普通幹線對減
-        } else {
-            const chosenRoute = hiddenInput ? hiddenInput.value : 'sea'; 
-            const seaObj = (s1.sea_km !== undefined) ? s1 : s2;
-            const trunkObj = (s1.sea_km === undefined) ? s1 : s2;
-
-            if (chosenRoute === 'sea') {
-                return Math.abs(trunkObj.km - 207.2) + Math.abs(seaObj.sea_km - 90.2); // 經由彰化
-            } else {
-                return Math.abs(trunkObj.km - 121.7) + seaObj.sea_km; // 經由竹南
-            }
-        }
-    }
-
-    // ==========================================
-    // 4. 【純普通幹線/山線對減流派】
-    // ==========================================
-    return Math.abs(s1.km - s2.km);
-}
-
-// 報單數據生成
-function calculateReport() {
-    const names = document.querySelectorAll('.st-name');
-    const guaRs = document.querySelectorAll('.st-gua-r');
-    const guaKs = document.querySelectorAll('.st-gua-k');
-    const zhaiRs = document.querySelectorAll('.st-zhai-r');
-    const zhaiKs = document.querySelectorAll('.st-zhai-k');
-    const errorNotice = document.getElementById('errorNotice');
-
-    if(errorNotice) { errorNotice.style.display = 'none'; errorNotice.innerHTML = ''; }
-
-    let stations = [];
-    for(let i=0; i<names.length; i++) {
-        if(!names[i].value) continue;
-        stations.push({
-            name: names[i].value,
-            guaR: parseFloat(guaRs[i].value) || 0,
-            guaK: parseFloat(guaKs[i].value) || 0,
-            zhaiR: parseFloat(zhaiRs[i].value) || 0,
-            zhaiK: parseFloat(zhaiKs[i].value) || 0,
-            diffR: 0, diffK: 0, dist: 0, kmR: 0, kmK: 0
-        });
-    }
-
-    if(stations.length < 2) {
-        if(errorNotice) { errorNotice.style.display = 'block'; errorNotice.innerHTML = '⚠️ 請至少選擇兩個站點進行區間結算！'; }
-        return;
-    }
-
-    let currentR = 0, currentK = 0;
-    let totalGuaR = 0, totalGuaK = 0, totalZhaiR = 0, totalZhaiK = 0;
-    let totalKmR = 0, totalKmK = 0;
-
-    for(let i = 0; i < stations.length; i++) {
-        totalGuaR += stations[i].guaR; totalGuaK += stations[i].guaK;
-        totalZhaiR += stations[i].zhaiR; totalZhaiK += stations[i].zhaiK;
-    }
-
-    const isWeightBalanced = Math.abs(totalGuaR - totalZhaiR) < 0.01;
-    const isEmptyBalanced = Math.abs(totalGuaK - totalZhaiK) < 0.01;
-
-    if (!isWeightBalanced || !isEmptyBalanced) {
-        if(errorNotice) {
-            let errorHtml = `<div style="font-size: 1.05rem; margin-bottom: 5px;">⚠️ 數據錯誤！摘掛車數無法互相抵消：</div>`;
-            if (!isWeightBalanced) errorHtml += `<div>❌ <b>重車不平衡：</b>總共連掛 ${totalGuaR} 輛，卻摘下了 ${totalZhaiR} 輛 (相差 ${Math.abs(totalGuaR - totalZhaiR).toFixed(1)} 輛)</div>`;
-            if (!isEmptyBalanced) errorHtml += `<div>❌ <b>空車不平衡：</b>總共連掛 ${totalGuaK} 輛，卻摘下了 ${totalZhaiK} 輛 (相差 ${Math.abs(totalGuaK - totalZhaiK).toFixed(1)} 輛)</div>`;
-            errorHtml += `<div style="margin-top: 5px; font-size: 0.8rem; color: #666;">※ 請修正上方各站點的連掛與摘下數量。</div>`;
-            errorNotice.innerHTML = errorHtml; errorNotice.style.display = 'block';
-            errorNotice.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return; 
-    }
-
-    for(let i = 0; i < stations.length; i++) {
-        currentR = currentR + stations[i].guaR - stations[i].zhaiR;
-        currentK = currentK + stations[i].guaK - stations[i].zhaiK;
-
-        if(i < stations.length - 1) {
-            let nextStation = stations[i+1];
-            let distance = getFreightDistance(stations[i].name, nextStation.name);
-            let ceiledDistance = Math.ceil(distance);
-            
-            nextStation.dist = ceiledDistance;
-            nextStation.diffR = currentR; nextStation.diffK = currentK;
-            nextStation.kmR = Math.round((currentR * ceiledDistance) * 10) / 10;
-            nextStation.kmK = Math.round((currentK * ceiledDistance) * 10) / 10;
-            totalKmR += nextStation.kmR; totalKmK += nextStation.kmK;
-        }
-    }
-
-    document.getElementById('resTrainNo').innerText = document.getElementById('trainNo').value;
-    document.getElementById('resDate').innerText = getFormattedDateString();
-
-    let html = `<tr style="font-weight:bold; background-color:#fff3cd;">
-        <td>共計</td><td>${totalGuaR || ''}</td><td>${totalGuaK || ''}</td><td>${totalZhaiR || ''}</td><td>${totalZhaiK || ''}</td>
-        <td></td><td></td><td></td><td>${Math.round(totalKmR*10)/10 || ''}</td><td>${Math.round(totalKmK*10)/10 || ''}</td>
-    </tr>`;
-
-    stations.forEach((st) => {
-        html += `<tr>
-            <td><strong>${st.name}</strong></td><td>${st.guaR || ''}</td><td>${st.guaK || ''}</td><td>${st.zhaiR || ''}</td><td>${st.zhaiK || ''}</td>
-            <td>${st.diffR || ''}</td><td>${st.diffK || ''}</td><td>${st.dist || ''}</td><td>${st.kmR || ''}</td><td>${st.kmK || ''}</td>
-        </tr>`;
-    });
-
-    document.getElementById('resultBody').innerHTML = html;
-    document.getElementById('resultModal').style.display = 'block';
-}
-
-window.closeModal = function() { document.getElementById('resultModal').style.display = 'none'; }
-
 function initApp() {
     setupSmartDatePicker();
     document.getElementById('btnAddStation').addEventListener('click', addStationCard);
@@ -963,8 +703,19 @@ function initApp() {
         switchCrewVersion(e.target.value);
     });
 
+    // 🌟【第一防線】：在生成卡片之前，強制完成大腦大表與選單資料鏈的實質指派！
+    const crewSelector = document.getElementById('crewSelector');
+    const defaultCrewKey = crewSelector ? crewSelector.value : 'changhua';
+    if (window.allCrewDatabases && window.allCrewDatabases[defaultCrewKey]) {
+        window.freightDatabase = window.allCrewDatabases[defaultCrewKey].database;
+        window.defaultStationOrder = window.allCrewDatabases[defaultCrewKey].order;
+    }
+
+    // 🚂【第二防線】：讓第一站與第二站老老實實出生完畢，此時不進行掃描器的干擾
     addStationCard();
     addStationCard();
+    
+    // 🚦【最後結算】：全部卡片就位，這才拉起總閘門進行第一次全屏號誌掃描！
     checkDirectRouteVisibility();
 }
 
