@@ -96,7 +96,7 @@ function checkDirectRouteVisibility() {
                         if (isHubIntersection && (theOtherStation.line === "山線" || theOtherStation.line === "幹線")) {
                             // 繼續往後巡邏
                         } else {
-                            if (titleSpan) titleSpan.innerText = "⚠️ 請確認經由樞紐：：";
+                            if (titleSpan) titleSpan.innerText = "⚠️ 請確認經由樞紐：";
                             if (btnSea) btnSea.innerHTML = "🚂 經由彰化";
                             if (btnMtn) btnMtn.innerHTML = "🚂 經由竹南";
                             
