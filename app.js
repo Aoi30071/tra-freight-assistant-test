@@ -693,8 +693,16 @@ function initApp() {
         switchCrewVersion(e.target.value);
     });
 
-    addStationCard();
-    addStationCard();
+    // 🌟【終極防呆】：初始化時，強制確保大腦大表有先咬住彰化組的設定，再出生兩張預選卡片！
+    const crewSelector = document.getElementById('crewSelector');
+    const defaultCrewKey = crewSelector ? crewSelector.value : 'changhua';
+    if (window.allCrewDatabases && window.allCrewDatabases[defaultCrewKey]) {
+        window.freightDatabase = window.allCrewDatabases[defaultCrewKey].database;
+        window.defaultStationOrder = window.allCrewDatabases[defaultCrewKey].order;
+    }
+
+    addStationCard(); // 預設第 1 站
+    addStationCard(); // 預設第 2 站
     checkDirectRouteVisibility();
 }
 
