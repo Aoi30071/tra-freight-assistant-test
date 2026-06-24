@@ -500,27 +500,42 @@ function getFreightDistance(st1, st2) {
     if (st1 === "中興支線") return 16 + getFreightDistance("二水", st2);
     if (st2 === "中興支線") return 16 + getFreightDistance(st1, "二水");
 
+    // ==========================================
     // 海線內部區間
+    // ==========================================
     if (s1.sea_km !== undefined && s2.sea_km !== undefined) {
         if (!((st1 === "竹南" && st2 === "彰化") || (st2 === "竹南" && st1 === "彰化"))) {
             return Math.abs(s1.sea_km - s2.sea_km);
         }
     }
 
-    // 跨線分流邏輯
+    // ==========================================
+    // 跨線分流邏輯（💡 已精準防呆：排除山線直通彰化/竹南的誤判）
+    // ==========================================
     if ((s1.sea_km !== undefined) !== (s2.sea_km !== undefined)) {
-        const seaObj = (s1.sea_km !== undefined) ? s1 : s2;
-        const trunkObj = (s1.sea_km === undefined) ? s1 : s2;
-        const trunkKm = trunkObj.km;
+        // 防呆閘門：如果其中一站是交會樞紐（彰化/竹南），而另一站是純山線或純幹線，直接跳過不進跨線
+        const isHubIntersection = (st1 === "彰化" || st1 === "竹南" || st2 === "彰化" || st2 === "竹南");
+        const theOtherStation = (st1 === "彰化" || st1 === "竹南") ? s2 : s1;
         
-        if (trunkKm < 160) {
-            return Math.abs(trunkKm - 121.7) + seaObj.sea_km;
+        // 如果另一站是純山線、山線車站或一般幹線，不走跨線公式，直接在最下方進行普通對減
+        if (isHubIntersection && (theOtherStation.line === "山線" || theOtherStation.line === "幹線")) {
+            // Pass，直接去最下面執行相減
         } else {
-            return Math.abs(trunkKm - 207.2) + Math.abs(seaObj.sea_km - 90.2);
+            const seaObj = (s1.sea_km !== undefined) ? s1 : s2;
+            const trunkObj = (s1.sea_km === undefined) ? s1 : s2;
+            const trunkKm = trunkObj.km;
+            
+            if (trunkKm < 160) {
+                return Math.abs(trunkKm - 121.7) + seaObj.sea_km;
+            } else {
+                return Math.abs(trunkKm - 207.2) + Math.abs(seaObj.sea_km - 90.2);
+            }
         }
     }
 
+    // ==========================================
     // 純普通幹線/山線對減公式
+    // ==========================================
     return Math.abs(s1.km - s2.km);
 }
 
