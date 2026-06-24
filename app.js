@@ -48,7 +48,7 @@ window.setDirectRoute = function(route) {
     }
 }
 
-// 💡 智慧方向定位自動掃描器（已徹底解開無窮迴圈死結）
+// 💡 智慧方向定位自動掃描器（全面套用學長的：北上預設竹南、南下預設彰化邏輯）
 function checkDirectRouteVisibility() {
     const crewKey = document.getElementById('crewSelector').value;
     const crewData = window.allCrewDatabases[crewKey];
@@ -59,7 +59,6 @@ function checkDirectRouteVisibility() {
     const currentInput = document.getElementById('currentDirectRoute');
     if (!selectorDiv) return;
 
-    // 防呆：如果目前車班不支援山海線切換（例如嘉義車班），直接封鎖並隱藏
     if (!crewData || crewData.hasDirectRouteToggle === false) {
         selectorDiv.style.display = 'none';
         if (currentInput) currentInput.value = 'sea';
@@ -97,33 +96,35 @@ function checkDirectRouteVisibility() {
                         if (isHubIntersection && (theOtherStation.line === "山線" || theOtherStation.line === "幹線")) {
                             // 繼續往後巡邏
                         } else {
-                            if (titleSpan) titleSpan.innerText = "⚠️ 請確認經由樞紐：";
+                            if (titleSpan) titleSpan.innerText = "⚠️ 偵測到跨線運轉！請確認交會樞紐：";
                             if (btnSea) btnSea.innerHTML = "🚂 經由彰化";
                             if (btnMtn) btnMtn.innerHTML = "🚂 經由竹南";
                             
-                            // 🔍 【純外觀安全轉轍】：直接改樣式，絕對不呼叫 setDirectRoute 避免死迴圈
-                            const seaObj = (s1.sea_km !== undefined) ? s1 : s2;
-                            const trunkObj = (s1.sea_km === undefined) ? s1 : s2;
-                            const isHeadingNorth = (trunkObj.km < 160); 
+                            // 🔍 【學長提出的終極邏輯】：純粹用發迄站的相對相對公里數判定「北上」或「南下」
+                            // 幹線 km 越大越偏南（如嘉義291.8、彰化207.2、竹南121.7、新竹104.5）
+                            // 如果迄站位置比發站還要偏北（公里數變小，或者是集集線往北出發），那就是「北上」！
+                            let isGoingNorth = false;
+                            if (s1.km !== undefined && s2.km !== undefined) {
+                                isGoingNorth = (s2.km < s1.km); 
+                            }
 
                             if (currentInput && btnSea && btnMtn) {
-                                if (isHeadingNorth) {
-                                    // 北上自動靠右（經竹南）
+                                if (isGoingNorth) {
+                                    // 🚂 北上跨線一律自動靠右（預設經竹南）
                                     btnSea.style.background = '#eeeeee';
                                     btnSea.style.color = '#333';
-                                    btnMtn.style.background = '#dc3545'; // 紅色高亮
+                                    btnMtn.style.background = '#dc3545'; // 紅色
                                     btnMtn.style.color = 'white';
                                     currentInput.value = 'mountain';
                                 } else {
-                                    // 南下自動靠左（經彰化）
-                                    btnSea.style.background = '#1a5cff'; // 藍色高亮
+                                    // 🚂 南下跨線一律自動靠左（預設經彰化）
+                                    btnSea.style.background = '#1a5cff'; // 藍色
                                     btnSea.style.color = 'white';
                                     btnMtn.style.background = '#eeeeee';
                                     btnMtn.style.color = '#333';
                                     currentInput.value = 'sea';
                                 }
                             }
-
                             selectorDiv.style.display = 'block'; 
                             return;
                         }
@@ -134,13 +135,6 @@ function checkDirectRouteVisibility() {
     }
     // 🔴 情境 C：其餘常規情況，立刻隱藏清除
     selectorDiv.style.display = 'none';
-    if (currentInput && btnSea && btnMtn) {
-        btnSea.style.background = '#1a5cff';
-        btnSea.style.color = 'white';
-        btnMtn.style.background = '#eeeeee';
-        btnMtn.style.color = '#333';
-        currentInput.value = 'sea';
-    }
 }
 
 // 日期選擇器初始化
@@ -186,7 +180,6 @@ function getFormattedDateString() {
     return `${y}/${m}/${d}`; 
 }
 
-// 修正：補上之前遺漏的關鍵輔助函式
 function getOptionText(key) {
     const info = freightDatabase[key];
     if (info && info.line === "幹線") return `${key}`;
@@ -378,11 +371,8 @@ function renderSmartOptions(cardElement, index) {
                         const key = defaultStationOrder[i];
                         const info = freightDatabase[key];
                         if (info && info.line !== "集集線" && info.line !== "專線" && key !== "中興支線") {
-                            if (key !== "彰化" && key !== "竹南" && info.line === "幹線") { /* 幹線放行 */ } 
-                            else {
-                                if (currentRouteMode === "山線專用" && info.line === "海線") continue;
-                                if (currentRouteMode === "海線專用" && info.line === "山線") continue;
-                            }
+                            if (currentRouteMode === "海線專用" && info.line === "山線") continue;
+                            if (currentRouteMode === "山線專用" && info.line === "海線") continue;
                             html += `<option value="${key}">${getOptionText(key)}</option>`;
                         }
                     }
@@ -391,11 +381,8 @@ function renderSmartOptions(cardElement, index) {
                         const key = defaultStationOrder[i];
                         const info = freightDatabase[key];
                         if (info && info.line !== "集集線" && info.line !== "專線" && key !== "中興支線") {
-                            if (key !== "彰化" && key !== "竹南" && info.line === "幹線") { /* 幹線放行 */ } 
-                            else {
-                                if (currentRouteMode === "山線專用" && info.line === "海線") continue;
-                                if (currentRouteMode === "海線專用" && info.line === "山線") continue;
-                            }
+                            if (currentRouteMode === "海線專用" && info.line === "山線") continue;
+                            if (currentRouteMode === "山線專用" && info.line === "海線") continue;
                             html += `<option value="${key}">${getOptionText(key)}</option>`;
                         }
                     }
