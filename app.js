@@ -103,7 +103,7 @@ function checkDirectRouteVisibility() {
                             const isSouthSide = (st1 === "彰化" || st2 === "彰化");
 
                             if (isNorthSide && isSouthSide) {
-                                // 🟢 情境 A：純直達車流派
+                                // 🟢 情境 A：純直達車流派（海線優先）
                                 const idx1 = defaultStationOrder.indexOf(st1);
                                 const idx2 = defaultStationOrder.indexOf(st2);
                                 const isGoingNorth = (idx2 < idx1);
@@ -114,7 +114,7 @@ function checkDirectRouteVisibility() {
                                 if (btnMtn) btnMtn.innerHTML = "⛰️ 經由山線";
 
                                 if (currentInput && btnSea && btnMtn) {
-                                    btnSea.style.background = '#1a5cff'; // 藍色高亮（預設海線優先）
+                                    btnSea.style.background = '#1a5cff'; 
                                     btnSea.style.color = 'white';
                                     btnMtn.style.background = '#eeeeee';
                                     btnMtn.style.color = '#333';
@@ -133,11 +133,11 @@ function checkDirectRouteVisibility() {
                                     if (isGoingNorth) {
                                         btnSea.style.background = '#eeeeee';
                                         btnSea.style.color = '#333';
-                                        btnMtn.style.background = '#dc3545'; // 紅色高亮
+                                        btnMtn.style.background = '#dc3545'; 
                                         btnMtn.style.color = 'white';
                                         currentInput.value = 'mountain';
                                     } else {
-                                        btnSea.style.background = '#1a5cff'; // 藍色高亮
+                                        btnSea.style.background = '#1a5cff'; 
                                         btnSea.style.color = 'white';
                                         btnMtn.style.background = '#eeeeee';
                                         btnMtn.style.color = '#333';
@@ -233,7 +233,7 @@ function detectTrainRouteHistory() {
     return "尚未定錨";
 }
 
-// 智慧推薦選單 (🛠️ 全面換裝樣板字串，徹底排除引號斷裂引發的 SyntaxError)
+// 智慧推薦選單 (🛠️ 已將所有字串拼接重構為標準乾淨的樣板字串，徹底排除語法地雷)
 function renderSmartOptions(cardElement, index) {
     const select = cardElement.querySelector('.st-name');
     if (!select) return;
@@ -322,7 +322,7 @@ function renderSmartOptions(cardElement, index) {
                     html += `</optgroup><optgroup label="其餘北上車站">`;
                     for (let i = prevIdx - 1; i >= 0; i--) {
                         const key = defaultStationOrder[i];
-                        if (freightDatabase[key] && (freightDatabase[key].line === "海線" || freightDatabase[key].line === "幹線") && key !== "臺中港" && key !== "中文港區" && key !== "停靠站推薦" && key !== "中港區") {
+                        if (freightDatabase[key] && (freightDatabase[key].line === "海線" || freightDatabase[key].line === "幹線") && key !== "臺中港" && key !== "中文港區" && key !== "中港區") {
                             html += `<option value="${key}">${getOptionText(key)}</option>`;
                         }
                     }
@@ -335,16 +335,16 @@ function renderSmartOptions(cardElement, index) {
                             html += `<option value="${key}">${getOptionText(key)}</option>`;
                         }
                     }
-                    html += `</optgroup><optgroup label="Auto 推薦南下區間">`;
+                    html += `</optgroup><optgroup label="其餘南下車站">`;
                     for (let i = prevIdx + 1; i < defaultStationOrder.length; i++) {
                         const key = defaultStationOrder[i];
-                        if (freightDatabase[key] && (freightDatabase[key].line === "海線" || freightDatabase[key].line === "幹線") && key !== "臺重港" && key !== "臺中港" && key !== "DirectRouteVisibility" && key !== "中港區") {
+                        if (freightDatabase[key] && (freightDatabase[key].line === "海線" || freightDatabase[key].line === "幹線") && key !== "臺中港" && key !== "中港區") {
                             html += `<option value="${key}">${getOptionText(key)}</option>`;
                         }
                     }
                     html += `</optgroup>`;
                 }
-            } else if (prevInfo && (prevInfo.line === "集集線" || prevName === "中文支線" || prevName === "中興支線")) {
+            } else if (prevInfo && (prevInfo.line === "集集線" || prevName === "中興支線")) {
                 if (dirType === 'odd') {
                     html += `<optgroup label="🧭 停靠站推薦：往支線內南下/深入">`;
                     defaultStationOrder.forEach(key => {
@@ -365,7 +365,7 @@ function renderSmartOptions(cardElement, index) {
                     html += `<option value="二水">二水 (幹線) ⭐</option>`;
                     defaultStationOrder.forEach(key => {
                         const info = freightDatabase[key];
-                        if (info && (info.line === "集集線" || key === "中文支線" || key === "中興支線") && key !== prevName) {
+                        if (info && (info.line === "集集線" || key === "中興支線") && key !== prevName) {
                             if (defaultStationOrder.indexOf(key) < defaultStationOrder.indexOf(prevName)) {
                                 html += `<option value="${key}">${key}</option>`;
                             }
@@ -375,11 +375,11 @@ function renderSmartOptions(cardElement, index) {
                     defaultStationOrder.forEach(key => { if (key !== prevName) html += `<option value="${key}">${getOptionText(key)}</option>`; });
                     html += `</optgroup>`;
                 }
-            } else if (prevName === "中文港區" || prevName === "中港區") {
+            } else if (prevName === "中港區") {
                 html += `<optgroup label="🧭 停靠站推薦：中港區出專線">`;
                 html += `<option value="臺中港">臺中港 (海線) ⭐</option>`;
                 html += `</optgroup><optgroup label="其餘幹線車站">`;
-                defaultStationOrder.forEach(key => { if (key !== "臺中港" && key !== "那些" && key !== "中港區") html += `<option value="${key}">${getOptionText(key)}</option>`; });
+                defaultStationOrder.forEach(key => { if (key !== "臺中港" && key !== "中港區") html += `<option value="${key}">${getOptionText(key)}</option>`; });
                 html += `</optgroup>`;
             } else {
                 const labelDirection = (dirType === 'even') ? "北上方向" : "南下方向";
@@ -389,7 +389,7 @@ function renderSmartOptions(cardElement, index) {
                     for (let i = prevIdx - 1; i >= 0; i--) {
                         const key = defaultStationOrder[i];
                         const info = freightDatabase[key];
-                        if (info && info.line !== "集集線" && info.line !== "專線" && key !== "中文港區" && key !== "中興支線") {
+                        if (info && info.line !== "集集線" && info.line !== "專線" && key !== "中興支線") {
                             if (currentRouteMode === "海線專用" && info.line === "山線") continue;
                             if (currentRouteMode === "山線專用" && info.line === "海線") continue;
                             html += `<option value="${key}">${getOptionText(key)}</option>`;
@@ -399,7 +399,7 @@ function renderSmartOptions(cardElement, index) {
                     for (let i = prevIdx + 1; i < defaultStationOrder.length; i++) {
                         const key = defaultStationOrder[i];
                         const info = freightDatabase[key];
-                        if (info && info.line !== "集集線" && info.line !== "專線" && key !== "中文港區" && key !== "中興支線") {
+                        if (info && info.line !== "集集線" && info.line !== "專線" && key !== "Ref" && key !== "中興支線") {
                             if (currentRouteMode === "海線專用" && info.line === "山線") continue;
                             if (currentRouteMode === "山線專用" && info.line === "海線") continue;
                             html += `<option value="${key}">${getOptionText(key)}</option>`;
@@ -533,7 +533,7 @@ function getFreightDistance(st1, st2) {
     if (s1.line === "集集線") return s1.km + getFreightDistance("二水", st2);
     if (s2.line === "集集線") return s2.km + getFreightDistance(st1, "二水");
     if (st1 === "中興支線") return 16 + getFreightDistance("二水", st2);
-    if (st2 === "微調中興支線" || st2 === "中興支線") return 16 + getFreightDistance(st1, "二水");
+    if (st2 === "中興支線") return 16 + getFreightDistance(st1, "二水");
 
     const isNorthSide = (st1 === "新竹貨" || st1 === "新竹" || st1 === "竹南" || st2 === "新竹貨" || st2 === "新竹" || st2 === "竹南");
     const isSouthSide = (st1 === "彰化" || st1 === "員林" || st1 === "社頭" || st1 === "田中" || st1 === "二水" || st1 === "林內" || st1 === "斗六" || st1 === "斗南" || st1 === "大林" || st1 === "民雄" || st1 === "嘉義" || st2 === "彰化" || st2 === "員林" || st2 === "社頭" || st2 === "田中" || st2 === "二水" || st2 === "林內" || st2 === "斗六" || st2 === "斗南" || st2 === "大林" || st2 === "民雄" || st2 === "嘉義");
@@ -680,8 +680,6 @@ function calculateReport() {
     document.getElementById('resultBody').innerHTML = html;
     document.getElementById('resultModal').style.display = 'block';
 }
-
-window.closeModal = function() { document.getElementById('resultModal').style.display = 'none'; }
 
 function initApp() {
     setupSmartDatePicker();
