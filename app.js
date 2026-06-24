@@ -26,7 +26,7 @@ window.switchCrewVersion = function(crewKey) {
     checkDirectRouteVisibility();
 }
 
-// 方案 B：直達車開關視覺切換
+// 方案 B：直達車開關視覺切換（手動點擊時使用）
 window.setDirectRoute = function(route) {
     const btnSea = document.getElementById('toggleSea');
     const btnMtn = document.getElementById('toggleMountain');
@@ -48,7 +48,7 @@ window.setDirectRoute = function(route) {
     }
 }
 
-// 💡 智慧方向定位自動掃描器（北上自動預設經竹南，南下自動預設經彰化）
+// 💡 智慧方向定位自動掃描器（已徹底解開無窮迴圈死結）
 function checkDirectRouteVisibility() {
     const crewKey = document.getElementById('crewSelector').value;
     const crewData = window.allCrewDatabases[crewKey];
@@ -56,12 +56,13 @@ function checkDirectRouteVisibility() {
     const titleSpan = document.getElementById('directRouteTitle');
     const btnSea = document.getElementById('toggleSea');
     const btnMtn = document.getElementById('toggleMountain');
+    const currentInput = document.getElementById('currentDirectRoute');
     if (!selectorDiv) return;
 
     // 防呆：如果目前車班不支援山海線切換（例如嘉義車班），直接封鎖並隱藏
     if (!crewData || crewData.hasDirectRouteToggle === false) {
         selectorDiv.style.display = 'none';
-        setDirectRoute('sea');
+        if (currentInput) currentInput.value = 'sea';
         return;
     }
 
@@ -93,7 +94,6 @@ function checkDirectRouteVisibility() {
                         const isHubIntersection = (st1 === "彰化" || st1 === "竹南" || st2 === "彰化" || st2 === "竹南");
                         const theOtherStation = (st1 === "彰化" || st1 === "竹南") ? s2 : s1;
                         
-                        // 樞紐防呆：如果是純山線/幹線進大樞紐（如三義-彰化），跳過不彈選單
                         if (isHubIntersection && (theOtherStation.line === "山線" || theOtherStation.line === "幹線")) {
                             // 繼續往後巡邏
                         } else {
@@ -101,18 +101,26 @@ function checkDirectRouteVisibility() {
                             if (btnSea) btnSea.innerHTML = "🚂 經由彰化";
                             if (btnMtn) btnMtn.innerHTML = "🚂 經由竹南";
                             
-                            // 🔍 【智慧方向定位】：根據幹線站位置自動切換預設值
+                            // 🔍 【純外觀安全轉轍】：直接改樣式，絕對不呼叫 setDirectRoute 避免死迴圈
                             const seaObj = (s1.sea_km !== undefined) ? s1 : s2;
                             const trunkObj = (s1.sea_km === undefined) ? s1 : s2;
-                            
                             const isHeadingNorth = (trunkObj.km < 160); 
 
-                            const currentInput = document.getElementById('currentDirectRoute');
-                            if (currentInput) {
+                            if (currentInput && btnSea && btnMtn) {
                                 if (isHeadingNorth) {
-                                    setDirectRoute('mountain'); // 北上自動靠右（經竹南）
+                                    // 北上自動靠右（經竹南）
+                                    btnSea.style.background = '#eeeeee';
+                                    btnSea.style.color = '#333';
+                                    btnMtn.style.background = '#dc3545'; // 紅色高亮
+                                    btnMtn.style.color = 'white';
+                                    currentInput.value = 'mountain';
                                 } else {
-                                    setDirectRoute('sea');      // 南下自動靠左（經彰化）
+                                    // 南下自動靠左（經彰化）
+                                    btnSea.style.background = '#1a5cff'; // 藍色高亮
+                                    btnSea.style.color = 'white';
+                                    btnMtn.style.background = '#eeeeee';
+                                    btnMtn.style.color = '#333';
+                                    currentInput.value = 'sea';
                                 }
                             }
 
@@ -126,7 +134,13 @@ function checkDirectRouteVisibility() {
     }
     // 🔴 情境 C：其餘常規情況，立刻隱藏清除
     selectorDiv.style.display = 'none';
-    setDirectRoute('sea'); 
+    if (currentInput && btnSea && btnMtn) {
+        btnSea.style.background = '#1a5cff';
+        btnSea.style.color = 'white';
+        btnMtn.style.background = '#eeeeee';
+        btnMtn.style.color = '#333';
+        currentInput.value = 'sea';
+    }
 }
 
 // 日期選擇器初始化
@@ -172,6 +186,7 @@ function getFormattedDateString() {
     return `${y}/${m}/${d}`; 
 }
 
+// 修正：補上之前遺漏的關鍵輔助函式
 function getOptionText(key) {
     const info = freightDatabase[key];
     if (info && info.line === "幹線") return `${key}`;
@@ -226,7 +241,7 @@ function renderSmartOptions(cardElement, index) {
     if (index === 0) {
         let html = '<option value="">--請選擇發站--</option>';
         defaultStationOrder.forEach(key => {
-            html += `<option value="${key}">${getOptionText(key)}</option>';
+            html += `<option value="${key}">${getOptionText(key)}</option>`;
         });
         select.innerHTML = html;
         select.value = currentVal;
