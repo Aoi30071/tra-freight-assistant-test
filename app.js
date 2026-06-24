@@ -48,7 +48,7 @@ window.setDirectRoute = function(route) {
     }
 }
 
-// 💡 已優化：自動掃描相鄰車站（新增：南端天然防呆，海線對決彰化以南自動隱藏選單）
+// 💡 已全面升級：自動掃描相鄰車站（兼具直達車與跨線車雙機制即時變臉）
 function checkDirectRouteVisibility() {
     const crewKey = document.getElementById('crewSelector').value;
     const crewData = window.allCrewDatabases[crewKey];
@@ -79,7 +79,7 @@ function checkDirectRouteVisibility() {
                 const s2 = freightDatabase[st2];
 
                 if (s1 && s2) {
-                    // 🟢 情境 A：直達車流派（如 新竹貨 ⇄ 二水）
+                    // 🟢 情境 A：直達車流派
                     if (isNorthSide && isSouthSide) {
                         const directionText = (s1.km > s2.km) ? "【北上】" : "【南下】";
                         if (titleSpan) titleSpan.innerText = `🧭 運轉調度：偵測到區間包含 ${directionText} 直達路段 (${st1} ➔ ${st2})`;
@@ -88,23 +88,15 @@ function checkDirectRouteVisibility() {
                         selectorDiv.style.display = 'block'; 
                         return;
                     } 
-                    // 🟡 情境 B：交叉跨線車流派（如 三義 ⇄ 沙鹿）
+                    // 🟡 情境 B：交叉跨線車流派
                     else if ((s1.sea_km !== undefined) !== (s2.sea_km !== undefined)) {
                         const isHubIntersection = (st1 === "彰化" || st1 === "竹南" || st2 === "彰化" || st2 === "竹南");
                         const theOtherStation = (st1 === "彰化" || st1 === "竹南") ? s2 : s1;
                         
-                        // 🔍 【學長提議的實務優化】：如果是 彰化以南車站(isSouthSide) ⇄ 海線車站，實務上必經彰化
-                        // 我們強制讓隱藏欄位鎖定在 'sea' (即經由彰化)，並且不彈出畫面干擾同仁
-                        if (isSouthSide) {
-                            setDirectRoute('sea'); // 強制切換為經由彰化
-                            // 繼續往後巡邏，格子維持隱藏
-                        }
                         // 樞紐防呆：如果是純山線/幹線進大樞紐（如三義-彰化），跳過不彈選單
-                        else if (isHubIntersection && (theOtherStation.line === "山線" || theOtherStation.line === "幹線")) {
-                            // 繼續往後巡邏
-                        } 
-                        // 真正的跨線大魔王（如 三義 ⇄ 沙鹿，不含彰化以南站），才需要亮出選單讓同仁挑選
-                        else {
+                        if (isHubIntersection && (theOtherStation.line === "山線" || theOtherStation.line === "幹線")) {
+                            // 繼續往後掃描
+                        } else {
                             if (titleSpan) titleSpan.innerText = "⚠️ 偵測到跨線運轉！請確認交會樞紐：";
                             if (btnSea) btnSea.innerHTML = "🚂 經由彰化";
                             if (btnMtn) btnMtn.innerHTML = "🚂 經由竹南";
@@ -116,7 +108,7 @@ function checkDirectRouteVisibility() {
             }
         }
     }
-    // 🔴 情境 C：其餘常規情況，立刻隱藏清除
+    // 🔴 情境 C：非直達、非跨線、或者沒有任何相符時，立刻隱藏清除
     selectorDiv.style.display = 'none';
     setDirectRoute('sea');
 }
