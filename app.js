@@ -48,7 +48,7 @@ window.setDirectRoute = function(route) {
     }
 }
 
-// 💡 智慧方向定位自動掃描器（全面套用學長的：北上預設竹南、南下預設彰化邏輯）
+// 💡 智慧方向定位自動掃描器（已放寬山線跨線門檻，並改用大表排序精準判定南北上）
 function checkDirectRouteVisibility() {
     const crewKey = document.getElementById('crewSelector').value;
     const crewData = window.allCrewDatabases[crewKey];
@@ -88,36 +88,39 @@ function checkDirectRouteVisibility() {
                         selectorDiv.style.display = 'block'; 
                         return;
                     } 
-                    // 🟡 情境 B：交叉跨線車流派（如 三義 ⇄ 沙鹿、沙鹿 ⇄ 新竹貨）
-                    else if ((s1.sea_km !== undefined) !== (s2.sea_km !== undefined)) {
+                    // 🟡 情境 B：交叉跨線與山海線抉擇流派（已放寬門檻：只要涉及山線、海線且非純同線區間，即亮選單）
+                    else if (s1.line === "山線" || s1.line === "海線" || s2.line === "山線" || s2.line === "海線") {
                         const isHubIntersection = (st1 === "彰化" || st1 === "竹南" || st2 === "彰化" || st2 === "竹南");
                         const theOtherStation = (st1 === "彰化" || st1 === "竹南") ? s2 : s1;
                         
-                        if (isHubIntersection && (theOtherStation.line === "山線" || theOtherStation.line === "幹線")) {
+                        // 樞紐防呆：如果是純山線/幹線緊鄰大樞紐（如三義-彰化、大肚-彰化），跳過不彈選單
+                        if (isHubIntersection && (theOtherStation.line === "山線" || theOtherStation.line === "幹線" || theOtherStation.line === "海線")) {
+                            // 繼續往後巡邏
+                        } else if (s1.line === s2.line && s1.line !== "幹線") {
+                            // 同為純山線內部或純海線內部（如三義-后里、沙鹿-大甲），不彈選單
                             // 繼續往後巡邏
                         } else {
+                            // 🛠️ 專業、俐落的現場台鐵短語
                             if (titleSpan) titleSpan.innerText = "⚠️ 請確認經由樞紐：";
                             if (btnSea) btnSea.innerHTML = "🚂 經由彰化";
                             if (btnMtn) btnMtn.innerHTML = "🚂 經由竹南";
                             
-                            // 🔍 【學長提出的終極邏輯】：純粹用發迄站的相對相對公里數判定「北上」或「南下」
-                            // 幹線 km 越大越偏南（如嘉義291.8、彰化207.2、竹南121.7、新竹104.5）
-                            // 如果迄站位置比發站還要偏北（公里數變小，或者是集集線往北出發），那就是「北上」！
-                            let isGoingNorth = false;
-                            if (s1.km !== undefined && s2.km !== undefined) {
-                                isGoingNorth = (s2.km < s1.km); 
-                            }
+                            // 🔍 【純地理排序定錨法】：比對大表排序，迄站索引較小代表靠北端 ➔ 絕對是北上
+                            const idx1 = defaultStationOrder.indexOf(st1);
+                            const idx2 = defaultStationOrder.indexOf(st2);
+                            const isGoingNorth = (idx2 < idx1); 
 
+                            // 純視覺安全轉轍，避免呼叫外部連動導致選單消失
                             if (currentInput && btnSea && btnMtn) {
                                 if (isGoingNorth) {
-                                    // 🚂 北上跨線一律自動靠右（預設經竹南）
+                                    // 🚂 北上列車：一律自動靠右（預設經竹南）
                                     btnSea.style.background = '#eeeeee';
                                     btnSea.style.color = '#333';
                                     btnMtn.style.background = '#dc3545'; // 紅色
                                     btnMtn.style.color = 'white';
                                     currentInput.value = 'mountain';
                                 } else {
-                                    // 🚂 南下跨線一律自動靠左（預設經彰化）
+                                    // 🚂 南下列車：一律自動靠左（預設經彰化）
                                     btnSea.style.background = '#1a5cff'; // 藍色
                                     btnSea.style.color = 'white';
                                     btnMtn.style.background = '#eeeeee';
@@ -284,7 +287,7 @@ function renderSmartOptions(cardElement, index) {
                     html += `</optgroup><optgroup label="其餘南下車站">`;
                     for (let i = prevIdx + 1; i < defaultStationOrder.length; i++) {
                         const key = defaultStationOrder[i];
-                        if (freightDatabase[key] && freightDatabase[key].line !== "集集線" && freightDatabase[key].line !== "專線" && key !== "中興支線") {
+                        if (freightDatabase[key] && freightDatabase[key].line !== "集集線" && freightDatabase[key].line !== "專線" && key !== "徹底中興支線") {
                             html += `<option value="${key}">${getOptionText(key)}</option>`;
                         }
                     }
@@ -356,7 +359,7 @@ function renderSmartOptions(cardElement, index) {
                     defaultStationOrder.forEach(key => { if (key !== prevName) html += `<option value="${key}">${getOptionText(key)}</option>`; });
                     html += `</optgroup>`;
                 }
-            } else if (prevName === "中港區") {
+            } else if (prevName === "中文港區" || prevName === "中港區") {
                 html += `<optgroup label="🧭 停靠站推薦：中港區出專線">`;
                 html += `<option value="臺中港">臺中港 (海線) ⭐</option>`;
                 html += `</optgroup><optgroup label="其餘幹線車站">`;
