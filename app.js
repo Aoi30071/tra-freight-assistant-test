@@ -452,39 +452,49 @@ function getFreightDistance(st1, st2) {
     const crewKey = document.getElementById('crewSelector').value;
     const crewData = window.allCrewDatabases[crewKey];
     
-    // 💡 【嘉義車班專用查表防呆】如果是嘉義車班，直接去 lookupTable 撈答案
+    // 💡 【嘉義車班專用查表防呆】
     if (crewKey === 'chiayi' && crewData && crewData.lookupTable) {
-        // 由於查表鍵值是不分方向的（例如 橋頭-高雄 或 高雄-橋頭），我們做個雙向組合檢查
         const key1 = `${st1}-${st2}`;
         const key2 = `${st2}-${st1}`;
         if (crewData.lookupTable[key1] !== undefined) return crewData.lookupTable[key1];
         if (crewData.lookupTable[key2] !== undefined) return crewData.lookupTable[key2];
-        
-        // 如果選了相同的站（例如高雄➔高雄）
         if (st1 === st2) return 0;
     }
     const s1 = freightDatabase[st1];
     const s2 = freightDatabase[st2];
     if (!s1 || !s2) return 0;
 
-    // 大直達車判定（僅在彰化車班且符合跨線時啟動）
+    // 定義主線與直達車邊界
     const isNorthSide = (st1 === "新竹貨" || st1 === "新竹" || st1 === "竹南" || st2 === "新竹貨" || st2 === "新竹" || st2 === "竹南");
     const isSouthSide = (st1 === "彰化" || st1 === "員林" || st1 === "社頭" || st1 === "田中" || st1 === "二水" || st1 === "林內" || st1 === "斗六" || st1 === "斗南" || st1 === "大林" || st1 === "民雄" || st1 === "嘉義" || st2 === "彰化" || st2 === "員林" || st2 === "社頭" || st2 === "田中" || st2 === "二水" || st2 === "林內" || st2 === "斗六" || st2 === "斗南" || st2 === "大林" || st2 === "民雄" || st2 === "嘉義");
     
-    // 必須畫面上看得到開關，才啟動大直達公式
     const selectorDiv = document.getElementById('directRouteSelector');
-    const isToggleActive = selectorDiv && selectorDiv.style.display === 'block';
+    const titleSpan = document.getElementById('directRouteTitle');
+    const btnSea = document.getElementById('toggleSea');
+    const btnMtn = document.getElementById('toggleMountain');
+    const hiddenInput = document.getElementById('currentDirectRoute');
+    
+    // ==========================================
+    // 1. 【直達車流派】（如 新竹貨 ⇄ 二水）
+    // ==========================================
+    if (isNorthSide && isSouthSide) {
+        // 💡 【兩套切換機制 - 第一套】：還原最純粹的直達車原版文字
+        if (selectorDiv && titleSpan && btnSea && btnMtn) {
+            selectorDiv.style.display = 'block';
+            titleSpan.innerHTML = "🧭 直達車運行線別確認";
+            btnSea.innerHTML = "🌊 經由海線";
+            btnMtn.innerHTML = "⛰️ 經由山線";
+        }
 
-    if (isNorthSide && isSouthSide && isToggleActive) {
-        const chosenRoute = document.getElementById('currentDirectRoute').value;
+        const chosenRoute = hiddenInput ? hiddenInput.value : 'sea';
         if (chosenRoute === 'mountain') {
-            return Math.abs(s1.km - s2.km);
+            return Math.abs(s1.km - s2.km); 
         } else {
             const northStation = (s1.km < s2.km) ? s1 : s2;
             const southStation = (s1.km < s2.km) ? s2 : s1;
             const northToChunan = Math.abs(northStation.km - 121.7);
             const changhuaToSouth = Math.abs(southStation.km - 207.2);
-            return northToChunan + 90.2 + changhuaToSouth;
+            return northToChunan + 90.2 + changhuaToSouth; 
         }
     }
 
@@ -501,7 +511,7 @@ function getFreightDistance(st1, st2) {
     if (st2 === "中興支線") return 16 + getFreightDistance(st1, "二水");
 
     // ==========================================
-    // 海線內部區間
+    // 2. 【海線內部區間流派】
     // ==========================================
     if (s1.sea_km !== undefined && s2.sea_km !== undefined) {
         if (!((st1 === "竹南" && st2 === "彰化") || (st2 === "竹南" && st1 === "彰化"))) {
@@ -510,31 +520,39 @@ function getFreightDistance(st1, st2) {
     }
 
     // ==========================================
-    // 跨線分流邏輯（💡 已精準防呆：排除山線直通彰化/竹南的誤判）
+    // 3. 【交叉跨線車流派】（如 三義 ⇄ 沙鹿）
     // ==========================================
     if ((s1.sea_km !== undefined) !== (s2.sea_km !== undefined)) {
-        // 防呆閘門：如果其中一站是交會樞紐（彰化/竹南），而另一站是純山線或純幹線，直接跳過不進跨線
         const isHubIntersection = (st1 === "彰化" || st1 === "竹南" || st2 === "彰化" || st2 === "竹南");
         const theOtherStation = (st1 === "彰化" || st1 === "竹南") ? s2 : s1;
         
-        // 如果另一站是純山線、山線車站或一般幹線，不走跨線公式，直接在最下方進行普通對減
         if (isHubIntersection && (theOtherStation.line === "山線" || theOtherStation.line === "幹線")) {
-            // Pass，直接去最下面執行相減
+            // 降速走最下方普通幹線對減
         } else {
+            // 💡 【兩套切換機制 - 第二套】：跨線專用，同樣維持您要的最純粹、無廢話官方字眼
+            if (selectorDiv && titleSpan && btnSea && btnMtn) {
+                selectorDiv.style.display = 'block';
+                titleSpan.innerHTML = "⚠️ 偵測到跨線運轉！請確認交會樞紐：";
+                btnSea.innerHTML = "🚂 經由彰化";
+                btnMtn.innerHTML = "🚂 經由竹南";
+            }
+            
+            const chosenRoute = hiddenInput ? hiddenInput.value : 'sea'; 
             const seaObj = (s1.sea_km !== undefined) ? s1 : s2;
             const trunkObj = (s1.sea_km === undefined) ? s1 : s2;
-            const trunkKm = trunkObj.km;
-            
-            if (trunkKm < 160) {
-                return Math.abs(trunkKm - 121.7) + seaObj.sea_km;
+
+            if (chosenRoute === 'sea') {
+                // 🟢 點左邊按鈕 (經由彰化)
+                return Math.abs(trunkObj.km - 207.2) + Math.abs(seaObj.sea_km - 90.2);
             } else {
-                return Math.abs(trunkKm - 207.2) + Math.abs(seaObj.sea_km - 90.2);
+                // 🔵 點右邊按鈕 (經由竹南)
+                return Math.abs(trunkObj.km - 121.7) + seaObj.sea_km;
             }
         }
     }
 
     // ==========================================
-    // 純普通幹線/山線對減公式
+    // 4. 【純普通幹線/山線對減流派】
     // ==========================================
     return Math.abs(s1.km - s2.km);
 }
