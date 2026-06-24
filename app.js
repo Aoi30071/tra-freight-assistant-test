@@ -48,7 +48,7 @@ window.setDirectRoute = function(route) {
     }
 }
 
-// 💡 具備方向感與實務微調的自動掃描器（北上自動預設經竹南，南下自動預設經彰化）
+// 💡 智慧方向定位自動掃描器（北上自動預設經竹南，南下自動預設經彰化）
 function checkDirectRouteVisibility() {
     const crewKey = document.getElementById('crewSelector').value;
     const crewData = window.allCrewDatabases[crewKey];
@@ -73,7 +73,7 @@ function checkDirectRouteVisibility() {
             
             if (st1 && st2) {
                 const isNorthSide = (st1 === "新竹貨" || st1 === "新竹" || st1 === "竹南" || st2 === "新竹貨" || st2 === "新竹" || st2 === "竹南");
-                const isSouthSide = (st1 === "彰化" || st1 === "員林" || st1 === "社頭" || st1 === "田中" || st2 === "彰化" || st2 === "員林" || st2 === "社頭" || st2 === "田中" /* 保持架構對齊 */);
+                const isSouthSide = (st1 === "彰化" || st1 === "員林" || st1 === "社頭" || st1 === "田中" || st1 === "二水" || st1 === "林內" || st1 === "斗六" || st1 === "斗南" || st1 === "大林" || st1 === "民雄" || st1 === "嘉義" || st2 === "彰化" || st2 === "員林" || st2 === "社頭" || st2 === "田中" || st2 === "二水" || st2 === "林內" || st2 === "斗六" || st2 === "斗南" || st2 === "大林" || st2 === "民雄" || st2 === "嘉義");
                 
                 const s1 = freightDatabase[st1];
                 const s2 = freightDatabase[st2];
@@ -97,28 +97,22 @@ function checkDirectRouteVisibility() {
                         if (isHubIntersection && (theOtherStation.line === "山線" || theOtherStation.line === "幹線")) {
                             // 繼續往後巡邏
                         } else {
-                            if (titleSpan) titleSpan.innerText = "⚠️ 請確認經由樞紐：";
+                            if (titleSpan) titleSpan.innerText = "⚠️ 偵測到跨線運轉！請確認交會樞紐：";
                             if (btnSea) btnSea.innerHTML = "🚂 經由彰化";
                             if (btnMtn) btnMtn.innerHTML = "🚂 經由竹南";
                             
-                            // 🔍 【智慧方向探路功能】：
-                            // 我們抓出海線站與主線站，根據兩者的地理相對位置來判斷是北上還是南下
+                            // 🔍 【智慧方向定位】：根據幹線站位置自動切換預設值
                             const seaObj = (s1.sea_km !== undefined) ? s1 : s2;
                             const trunkObj = (s1.sea_km === undefined) ? s1 : s2;
                             
-                            // 💡 實務規則：如果幹線站里程小於 160（在苗栗、新竹端），代表車次偏向北端。
-                            // 或者是發站到迄站的幹線總里程呈現北上趨勢，則自動幫按鈕轉轍到右邊「經由竹南 (mountain)」
                             const isHeadingNorth = (trunkObj.km < 160); 
 
-                            // 只有當同仁還沒有在畫面上手動瘋狂亂點時，大腦才進場做聰明的預設值引導
                             const currentInput = document.getElementById('currentDirectRoute');
                             if (currentInput) {
                                 if (isHeadingNorth) {
-                                    // 🟢 北上：自動亮起右邊的「經由竹南」
-                                    setDirectRoute('mountain');
+                                    setDirectRoute('mountain'); // 北上自動靠右（經竹南）
                                 } else {
-                                    // 🟢 南下：自動亮起左邊的「經由彰化」
-                                    setDirectRoute('sea');
+                                    setDirectRoute('sea');      // 南下自動靠左（經彰化）
                                 }
                             }
 
@@ -133,7 +127,6 @@ function checkDirectRouteVisibility() {
     // 🔴 情境 C：其餘常規情況，立刻隱藏清除
     selectorDiv.style.display = 'none';
     setDirectRoute('sea'); 
-}
 }
 
 // 日期選擇器初始化
@@ -233,7 +226,7 @@ function renderSmartOptions(cardElement, index) {
     if (index === 0) {
         let html = '<option value="">--請選擇發站--</option>';
         defaultStationOrder.forEach(key => {
-            html += `<option value="${key}">${getOptionText(key)}</option>`;
+            html += `<option value="${key}">${getOptionText(key)}</option>';
         });
         select.innerHTML = html;
         select.value = currentVal;
@@ -493,7 +486,7 @@ function addStationCard() {
     checkDirectRouteVisibility();
 }
 
-// 核心里程計算（💡 保持最純粹的數學計算，不碰 UI 畫面）
+// 核心里程計算
 function getFreightDistance(st1, st2) {
     const crewKey = document.getElementById('crewSelector').value;
     const crewData = window.allCrewDatabases[crewKey];
@@ -508,6 +501,18 @@ function getFreightDistance(st1, st2) {
     const s1 = freightDatabase[st1];
     const s2 = freightDatabase[st2];
     if (!s1 || !s2) return 0;
+
+    // 專線與支線優先通關
+    if (s1.line === "專線" && s1.parent === st2) return s1.km;
+    if (s2.line === "專線" && s2.parent === st1) return s2.km;
+    if ((st1 === "中興支線" && st2 === "二水") || (st2 === "中興支線" && st1 === "二水")) return 16;
+    if (s1.line === "集集線" && st2 === "二水") return s1.km;
+    if (s2.line === "集集線" && st1 === "二水") return s2.km;
+    if (s1.line === "集集線" && s2.line === "集集線") return Math.abs(s1.km - s2.km);
+    if (s1.line === "集集線") return s1.km + getFreightDistance("二水", st2);
+    if (s2.line === "集集線") return s2.km + getFreightDistance(st1, "二水");
+    if (st1 === "中興支線") return 16 + getFreightDistance("二水", st2);
+    if (st2 === "中興支線") return 16 + getFreightDistance(st1, "二水");
 
     const isNorthSide = (st1 === "新竹貨" || st1 === "新竹" || st1 === "竹南" || st2 === "新竹貨" || st2 === "新竹" || st2 === "竹南");
     const isSouthSide = (st1 === "彰化" || st1 === "員林" || st1 === "社頭" || st1 === "田中" || st1 === "二水" || st1 === "林內" || st1 === "斗六" || st1 === "斗南" || st1 === "大林" || st1 === "民雄" || st1 === "嘉義" || st2 === "彰化" || st2 === "員林" || st2 === "社頭" || st2 === "田中" || st2 === "二水" || st2 === "林內" || st2 === "斗六" || st2 === "斗南" || st2 === "大林" || st2 === "民雄" || st2 === "嘉義");
@@ -528,18 +533,6 @@ function getFreightDistance(st1, st2) {
             return northToChunan + 90.2 + changhuaToSouth; 
         }
     }
-
-    // 專線與支線優先通關
-    if (s1.line === "專線" && s1.parent === st2) return s1.km;
-    if (s2.line === "專線" && s2.parent === st1) return s2.km;
-    if ((st1 === "中興支線" && st2 === "二水") || (st2 === "中興支線" && st1 === "二水")) return 16;
-    if (s1.line === "集集線" && st2 === "二水") return s1.km;
-    if (s2.line === "集集線" && st1 === "二水") return s2.km;
-    if (s1.line === "集集線" && s2.line === "集集線") return Math.abs(s1.km - s2.km);
-    if (s1.line === "集集線") return s1.km + getFreightDistance("二水", st2);
-    if (s2.line === "集集線") return s2.km + getFreightDistance(st1, "二水");
-    if (st1 === "中興支線") return 16 + getFreightDistance("二水", st2);
-    if (st2 === "中興支線") return 16 + getFreightDistance(st1, "二水");
 
     // ==========================================
     // 2. 【海線內部區間流派】
