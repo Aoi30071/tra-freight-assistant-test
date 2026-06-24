@@ -112,8 +112,8 @@ function checkDirectRouteVisibility() {
                         } else {
                             // 🛠️ 換上學長指定的現場俐落台鐵短語
                             if (titleSpan) titleSpan.innerText = "⚠️ 請確認經由樞紐：";
-                            if (btnSea) btnSea.innerHTML = "🚂 經由彰化";
-                            if (btnMtn) btnMtn.innerHTML = "🚂 經由竹南";
+                            if (btnSea) btnSea.innerHTML = "⎇ 經由彰化";
+                            if (btnMtn) btnMtn.innerHTML = "⎇ 經由竹南";
                             
                             // 🔍 【老調度員守備區精準定錨邏輯】
                             // 預設為經由彰化（符合絕大多數南端大站與中部山海跨線車實務）
