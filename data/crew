@@ -1,0 +1,36 @@
+// ==========================================
+// 車班設定
+// ==========================================
+
+export const crews = {
+
+    changhua: {
+        name: "彰化車班",
+
+        calculator: "distance",
+
+        coverage: {
+            north: "新竹貨",
+            south: "嘉義",
+
+            lines: [
+                "幹線",
+                "山線",
+                "海線",
+                "集集線",
+                "支線"
+            ]
+        }
+    },
+
+    chiayi: {
+        name: "嘉義車班",
+
+        calculator: "lookup",
+
+        coverage: {
+            source: "lookupTable"
+        }
+    }
+
+};
