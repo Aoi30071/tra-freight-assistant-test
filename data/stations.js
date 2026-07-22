@@ -371,7 +371,7 @@ export const stations = {
     },
 
     中港區: {
-        line: "專線",
+        line: "支線",
         parent: "臺中港",
         branchLength: 13
     }
